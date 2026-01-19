@@ -7,7 +7,7 @@
           <p>Ładowanie danych użytkownika...</p>
         </div>
         <div v-else>
-          <p><strong>Имя:</strong> {{ user.name || 'Без имени' }}</p>
+          <p><strong>Imie:</strong> {{ user.name || 'Без имени' }}</p>
           <p><strong>Email:</strong> {{ user.email }}</p>
         </div>
       </v-card-text>

@@ -41,13 +41,13 @@ const submitRegister = async () => {
       method: 'POST',
       body: form,
     })
-    success.value = 'Регистрация прошла успешно, вы теперь вошли.'
+    success.value = 'Zarejestrowano.'
     form.name = ''
     form.email = ''
     form.password = ''
     router.replace('/')
   } catch (err: any) {
-    error.value = err?.data?.message ?? err?.message ?? 'Не удалось зарегистрировать'
+    error.value = err?.data?.message ?? err?.message ?? 'Nie udalo śie zarejestrować'
   } finally {
     loading.value = false
   }

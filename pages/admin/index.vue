@@ -6,7 +6,7 @@ definePageMeta({ middleware: 'admin' })
   <section class="pa-8">
     <div class="text-center">
       <h1>Admin Panel</h1>
-      <p>Страница администратора с привилегированными действиями.</p>
+      <p>Strona Administratora.</p>
     </div>
   </section>
 </template>
