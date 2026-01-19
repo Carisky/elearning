@@ -1,3 +1,6 @@
-export default defineEventHandler(() => {
-  return { success: true, message: 'Logged out (stub)' }
+import { clearAuthToken } from '../utils/auth'
+
+export default defineEventHandler((event) => {
+  clearAuthToken(event)
+  return { success: true }
 })

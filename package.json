@@ -10,21 +10,26 @@
     "postinstall": "nuxt prepare",
     "docker:up": "docker compose up -d",
     "prisma:studio": "npx prisma studio --config ./prisma.config.ts",
-    "full": "concurrently \"npm run docker:up\" \"npm run dev\" \"npm run prisma:studio\""
+    "full": "concurrently \"npm run docker:up\" \"npm run dev\" \"npm run prisma:studio\"",
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.2.3",
+    "jsonwebtoken": "^9.0.0",
     "nuxt": "^4.2.2",
     "pg": "^8.17.1",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.16.0",
     "concurrently": "^9.2.1",
-    "dotenv": "^17.2.3",
     "prisma": "^7.2.0",
     "tsx": "^4.21.0",
     "vite-plugin-vuetify": "^2.1.3",
