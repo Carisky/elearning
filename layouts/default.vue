@@ -239,13 +239,13 @@ const closeLogin = () => {
   setAuthMode('login')
 }
 
-const submitLogin = async () => {
+const loginAndRedirect = async (credentials: { email: string; password: string }) => {
   loginError.value = ''
   loginLoading.value = true
   try {
     const payload = await $fetch('/api/login', {
       method: 'POST',
-      body: loginForm,
+      body: credentials,
     })
     await refreshUser()
     closeLogin()
@@ -255,26 +255,42 @@ const submitLogin = async () => {
     if (route.path !== destination) {
       router.replace(destination)
     }
+    return payload
   } catch (error: any) {
     loginError.value = error?.data?.message ?? error?.message ?? 'Ошибка при входе'
+    return null
   } finally {
     loginLoading.value = false
   }
+}
+
+const submitLogin = async () => {
+  await loginAndRedirect({
+    email: loginForm.email,
+    password: loginForm.password,
+  })
 }
 
 const submitRegister = async () => {
   registerError.value = ''
   registerSuccess.value = ''
   registerLoading.value = true
+  const credentials = {
+    email: registerForm.email,
+    password: registerForm.password,
+  }
   try {
     await $fetch('/api/register', {
       method: 'POST',
       body: registerForm,
     })
     registerSuccess.value = 'Zarejestrowano.'
-    registerForm.name = ''
-    registerForm.email = ''
-    registerForm.password = ''
+    const loginPayload = await loginAndRedirect(credentials)
+    if (loginPayload) {
+      registerForm.name = ''
+      registerForm.email = ''
+      registerForm.password = ''
+    }
   } catch (err: any) {
     registerError.value =
       err?.data?.message ?? err?.message ?? 'Nie udalo śie zarejestrować'
