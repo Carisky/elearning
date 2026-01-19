@@ -5,10 +5,312 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // добавь сам url, если у тебя не задано где-то выше:
+  // url = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseItemType {
+  CHAPTER
+  QUIZ
+  EXAM
+}
+
+enum QuestionType {
+  SINGLE
+  MULTI
+  TEXT
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELED
+  REFUNDED
+}
+
+enum EnrollmentSource {
+  ORDER
+  MANUAL
+  FREE
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  name     String?
+  password String
+  role     UserRole @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coursesCreated Course[]                 @relation("CourseCreatedBy")
+  orders         Order[]
+  enrollments    Enrollment[]
+  progress       UserCourseProgress[]
+  itemProgress   UserCourseItemProgress[]
+  attempts       AssessmentAttempt[]
+
+  cart Cart?
+}
+
+model Category {
+  id        Int    @id @default(autoincrement())
+  title     String
+  slug      String @unique
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+}
+
+model Course {
+  id         Int          @id @default(autoincrement())
+  categoryId Int
+  title      String
+  slug       String       @unique
+  priceCents Int          @default(0)
+  currency   String       @default("PLN")
+  status     CourseStatus @default(DRAFT)
+
+  createdById Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy User     @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  items       CourseItem[]
+  enrollments Enrollment[]
+  progress    UserCourseProgress[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+
+  @@index([categoryId])
+  @@index([createdById])
+}
+
+model CourseItem {
+  id         Int            @id @default(autoincrement())
+  courseId   Int
+  type       CourseItemType
+  title      String
+  position   Int
+  isRequired Boolean        @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course       Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter      CourseChapter?
+  assessment   Assessment?
+  userProgress UserCourseItemProgress[]
+
+  @@unique([courseId, position])
+  @@index([courseId, type])
+}
+
+model CourseChapter {
+  // 1:1 с CourseItem
+  courseItemId Int   @id
+  contentJson  Json?
+
+  courseItem CourseItem @relation(fields: [courseItemId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  // 1:1 с CourseItem (QUIZ/EXAM)
+  courseItemId     Int     @id
+  minPassScore     Int     @default(0)
+  attemptsLimit    Int?
+  timeLimitSec     Int?
+  shuffleQuestions Boolean @default(false)
+
+  courseItem CourseItem @relation(fields: [courseItemId], references: [id], onDelete: Cascade)
+
+  questions AssessmentQuestion[]
+  attempts  AssessmentAttempt[]
+}
+
+model AssessmentQuestion {
+  id           Int          @id @default(autoincrement())
+  assessmentId Int
+  type         QuestionType @default(SINGLE)
+  text         String
+  points       Int          @default(1)
+  position     Int          @default(0)
+
+  assessment     Assessment                @relation(fields: [assessmentId], references: [courseItemId], onDelete: Cascade)
+  answers        AssessmentAnswer[]
+  attemptAnswers AssessmentAttemptAnswer[]
+
+  @@unique([assessmentId, position])
+  @@index([assessmentId])
+}
+
+model AssessmentAnswer {
+  id         Int     @id @default(autoincrement())
+  questionId Int
+  text       String
+  isCorrect  Boolean @default(false)
+  position   Int     @default(0)
+
+  question       AssessmentQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attemptAnswers AssessmentAttemptAnswer[]
+
+  @@unique([questionId, position])
+  @@index([questionId])
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  status     OrderStatus @default(PENDING)
+  totalCents Int         @default(0)
+  currency   String      @default("PLN")
+
+  provider        String?
+  paymentIntentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+
+  @@index([userId, status])
+}
+
+model OrderItem {
+  id         Int    @id @default(autoincrement())
+  orderId    Int
+  courseId   Int
+  priceCents Int
+  currency   String @default("PLN")
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, courseId])
+  @@index([orderId])
+  @@index([courseId])
+}
+
+model Enrollment {
+  id          Int              @id @default(autoincrement())
+  userId      Int
+  courseId    Int
+  source      EnrollmentSource @default(ORDER)
+  activatedAt DateTime         @default(now())
+  expiresAt   DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model UserCourseProgress {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  courseId        Int
+  finished        Boolean   @default(false)
+  finishedAt      DateTime?
+  progressPercent Int       @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model UserCourseItemProgress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  courseItemId Int
+  completedAt  DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseItem CourseItem @relation(fields: [courseItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseItemId])
+  @@index([courseItemId])
+}
+
+model AssessmentAttempt {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  assessmentId Int // это courseItemId у Assessment
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  score        Int       @default(0)
+  passed       Boolean   @default(false)
+
+  user       User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment Assessment                @relation(fields: [assessmentId], references: [courseItemId], onDelete: Cascade)
+  answers    AssessmentAttemptAnswer[]
+
+  @@index([userId, assessmentId])
+  @@index([assessmentId])
+}
+
+model AssessmentAttemptAnswer {
+  id            Int     @id @default(autoincrement())
+  attemptId     Int
+  questionId    Int
+  answerId      Int?
+  textAnswer    String?
+  isCorrect     Boolean @default(false)
+  pointsAwarded Int     @default(0)
+
+  attempt  AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer   AssessmentAnswer?  @relation(fields: [answerId], references: [id], onDelete: SetNull)
+
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+// добавь к существующей схеме
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id       Int      @id @default(autoincrement())
+  cartId   Int
+  courseId Int
+  quantity Int      @default(1) // для курсов обычно всегда 1, но оставим
+  addedAt  DateTime @default(now())
+
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, courseId]) // один курс один раз в корзине
+  @@index([cartId])
+  @@index([courseId])
 }
