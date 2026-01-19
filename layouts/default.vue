@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app class="site-shell">
     <v-app-bar elevate-on-scroll height="64">
       <v-toolbar-title class="font-weight-medium">E-Learning</v-toolbar-title>
       <v-spacer />
@@ -10,7 +10,7 @@
       <v-btn text @click="handleLogout">Wyloguj</v-btn>
     </v-app-bar>
 
-    <v-main>
+    <v-main class="pa-10">
       <NuxtPage />
     </v-main>
 
@@ -66,14 +66,57 @@ const handleLogout = async () => {
 }
 </script>
 
-<style scoped>
+<style>
+.site-shell {
+  min-height: 100vh;
+  background-color: #F2E7CF;
+}
+
+.site-shell v-app-bar {
+  background: #D1E1CB !important;
+}
+
+.site-shell .v-toolbar-title,
+.site-shell .nav-link,
+.site-shell .v-btn {
+  color: #0F4557 !important;
+}
+
+.site-shell .v-btn--text:hover {
+  background-color: rgba(120, 206, 139, 0.12);
+}
+
+.site-shell .v-card {
+  background-color: #D1E1CB !important;
+  color: #0F4557 !important;
+}
+
+.site-shell .v-alert {
+  background-color: rgba(209, 225, 203, 0.9);
+  color: #0F4557;
+}
+
+.site-shell .v-btn[class*='v-btn--text']:hover {
+  color: #1FAD83 !important;
+}
+
 .nav-link {
-  color: inherit;
+  color: #0F4557;
   text-transform: uppercase;
   font-size: 0.9rem;
 }
 
 .nav-link:hover {
   text-decoration: none;
+  color: #1FAD83;
+}
+
+body {
+  background-color: #F2E7CF;
+  color: #0F4557;
+}
+
+.site-shell .v-main {
+  background-color: transparent;
 }
 </style>
