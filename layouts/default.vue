@@ -31,34 +31,95 @@
 
     <v-dialog v-if="!me" v-model="loginDialog" max-width="420" persistent>
       <v-card>
-        <v-card-title>Logowanie</v-card-title>
+        <v-card-title>
+          {{ authMode === 'login' ? 'Logowanie' : 'Rejestracja' }}
+        </v-card-title>
         <v-card-text>
-          <v-alert v-if="loginError" variant="tonal" dense class="mb-3">
+          <v-alert
+            v-if="authMode === 'login' && loginError"
+            variant="tonal"
+            dense
+            class="mb-3"
+          >
             {{ loginError }}
           </v-alert>
-          <v-form @submit.prevent="submitLogin">
-            <v-text-field
-              label="Email"
-              v-model="loginForm.email"
-              type="email"
-              required
-            />
-            <v-text-field
-              label="Hasło"
-              v-model="loginForm.password"
-              type="password"
-              required
-            />
+          <v-alert
+            v-else-if="authMode === 'register' && registerError"
+            variant="tonal"
+            dense
+            class="mb-3"
+          >
+            {{ registerError }}
+          </v-alert>
+          <v-alert
+            v-if="authMode === 'register' && registerSuccess"
+            variant="text"
+            dense
+            class="mb-3"
+          >
+            {{ registerSuccess }}
+          </v-alert>
+          <v-form
+            @submit.prevent="authMode === 'login' ? submitLogin() : submitRegister()"
+          >
+            <template v-if="authMode === 'login'">
+              <v-text-field
+                label="Email"
+                v-model="loginForm.email"
+                type="email"
+                required
+              />
+              <v-text-field
+                label="Hasło"
+                v-model="loginForm.password"
+                type="password"
+                required
+              />
+            </template>
+            <template v-else>
+              <v-text-field
+                label="Имя"
+                v-model="registerForm.name"
+                required
+              />
+              <v-text-field
+                label="Email"
+                v-model="registerForm.email"
+                type="email"
+                required
+              />
+              <v-text-field
+                label="Hasło"
+                v-model="registerForm.password"
+                type="password"
+                required
+              />
+            </template>
           </v-form>
           <p class="text-caption">
-            Нет аккаунта? <NuxtLink to="/register">Зарегистрируйтесь</NuxtLink>
+            <template v-if="authMode === 'login'">
+              Nie masz konta?
+              <v-btn text variant="text" class="pa-0" @click="setAuthMode('register')">
+                Zarejestruj śię
+              </v-btn>
+            </template>
+            <template v-else>
+              Jusz masz konto?
+              <v-btn text variant="text" class="pa-0" @click="setAuthMode('login')">
+                Zaloguj
+              </v-btn>
+            </template>
           </p>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="closeLogin">Anuluj</v-btn>
-          <v-btn :loading="loginLoading" color="primary" @click="submitLogin">
-            Zaloguj
+          <v-btn
+            :loading="authMode === 'login' ? loginLoading : registerLoading"
+            color="primary"
+            @click="authMode === 'login' ? submitLogin() : submitRegister()"
+          >
+            {{ authMode === 'login' ? 'Zaloguj' : 'Zarejestruj' }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -74,22 +135,34 @@ type MePayload = { id: number; email: string; name: string | null; role: 'USER' 
 const { data: me, refresh: refreshUser } = await useFetch<MePayload | null>('/api/me', { default: () => null })
 const isAdmin = computed(() => me.value?.role === 'ADMIN')
 
+const authMode = ref<'login' | 'register'>('login')
 const loginDialog = ref(false)
 const loginError = ref('')
 const loginLoading = ref(false)
 const loginForm = reactive({ email: '', password: '' })
+const registerForm = reactive({ name: '', email: '', password: '' })
+const registerError = ref('')
+const registerSuccess = ref('')
+const registerLoading = ref(false)
 
 const router = useRouter()
 const route = useRoute()
 
-const openLogin = () => {
+const setAuthMode = (mode: 'login' | 'register') => {
+  authMode.value = mode
   loginError.value = ''
+  registerError.value = ''
+  registerSuccess.value = ''
+}
+
+const openLogin = () => {
+  setAuthMode('login')
   loginDialog.value = true
 }
 
 const closeLogin = () => {
   loginDialog.value = false
-  loginError.value = ''
+  setAuthMode('login')
 }
 
 const submitLogin = async () => {
@@ -112,6 +185,27 @@ const submitLogin = async () => {
     loginError.value = error?.data?.message ?? error?.message ?? 'Ошибка при входе'
   } finally {
     loginLoading.value = false
+  }
+}
+
+const submitRegister = async () => {
+  registerError.value = ''
+  registerSuccess.value = ''
+  registerLoading.value = true
+  try {
+    await $fetch('/api/register', {
+      method: 'POST',
+      body: registerForm,
+    })
+    registerSuccess.value = 'Zarejestrowano.'
+    registerForm.name = ''
+    registerForm.email = ''
+    registerForm.password = ''
+  } catch (err: any) {
+    registerError.value =
+      err?.data?.message ?? err?.message ?? 'Nie udalo śie zarejestrować'
+  } finally {
+    registerLoading.value = false
   }
 }
 
