@@ -1,29 +1,91 @@
 <template>
   <v-app class="site-shell">
     <v-app-bar elevate-on-scroll height="64">
+      <v-app-bar-nav-icon class="d-flex d-md-none" @click="mobileNav = !mobileNav" />
       <v-toolbar-title class="font-weight-medium">
-        {{ isAdmin ? 'Панель администратора' : 'E-Learning' }}
+        {{ isAdmin ? 'Panel Administratora' : 'E-Learning' }}
       </v-toolbar-title>
       <v-spacer />
 
-      <template v-if="isAdmin">
-        <NuxtLink class="nav-link mr-4" to="/admin">Admin Panel</NuxtLink>
-        <v-btn text @click="handleLogout">Wyloguj</v-btn>
-      </template>
-
-      <template v-else>
-        <NuxtLink class="nav-link mr-4" to="/about-us">O NAS</NuxtLink>
-        <NuxtLink class="nav-link mr-4" to="/courses">KURSY</NuxtLink>
-        <NuxtLink class="nav-link mr-4" to="/contact-us">KONTAKT</NuxtLink>
-        <template v-if="me">
-          <NuxtLink class="nav-link mr-4" to="/my-profile">Moje konto</NuxtLink>
+      <div class="d-none d-md-flex align-center">
+        <template v-if="isAdmin">
+          <NuxtLink class="nav-link mr-4" to="/admin">Admin Panel</NuxtLink>
           <v-btn text @click="handleLogout">Wyloguj</v-btn>
         </template>
+
         <template v-else>
-          <v-btn text class="me-2" @click="openLogin">Zaloguj</v-btn>
+          <NuxtLink class="nav-link mr-4" to="/about-us">O NAS</NuxtLink>
+          <NuxtLink class="nav-link mr-4" to="/courses">KURSY</NuxtLink>
+          <NuxtLink class="nav-link mr-4" to="/contact-us">KONTAKT</NuxtLink>
+          <template v-if="me">
+            <NuxtLink class="nav-link mr-4" to="/my-profile">Moje konto</NuxtLink>
+            <v-btn text @click="handleLogout">Wyloguj</v-btn>
+          </template>
+          <template v-else>
+            <v-btn text class="me-2" @click="openLogin">Zaloguj</v-btn>
+          </template>
         </template>
-      </template>
+      </div>
     </v-app-bar>
+
+    <v-navigation-drawer
+      v-model="mobileNav"
+      temporary
+      class="site-shell-mobile-drawer"
+      width="220"
+    >
+      <v-list class="px-0">
+        <v-list-item class="mobile-nav-heading">
+          <v-list-item-title class="text-h6">E-Learning</v-list-item-title>
+        </v-list-item>
+        <v-divider />
+
+        <template v-if="isAdmin">
+          <v-list-item>
+            <NuxtLink class="mobile-nav-link" to="/admin" @click="closeNav">
+              Admin Panel
+            </NuxtLink>
+          </v-list-item>
+          <v-list-item>
+            <v-btn text class="mobile-nav-action" block @click="handleLogout">
+              Wyloguj
+            </v-btn>
+          </v-list-item>
+        </template>
+        <template v-else>
+          <v-list-item
+            v-for="link in publicNavLinks"
+            :key="link.to"
+          >
+            <NuxtLink class="mobile-nav-link" :to="link.to" @click="closeNav">
+              {{ link.label }}
+            </NuxtLink>
+          </v-list-item>
+
+          <v-divider class="my-3" />
+
+          <template v-if="me">
+            <v-list-item>
+              <NuxtLink class="mobile-nav-link" to="/my-profile" @click="closeNav">
+                Moje konto
+              </NuxtLink>
+            </v-list-item>
+            <v-list-item>
+              <v-btn text class="mobile-nav-action" block @click="handleLogout">
+                Wyloguj
+              </v-btn>
+            </v-list-item>
+          </template>
+          <template v-else>
+            <v-list-item>
+              <v-btn text class="mobile-nav-action" block @click="openLogin">
+                Zaloguj
+              </v-btn>
+            </v-list-item>
+          </template>
+        </template>
+      </v-list>
+    </v-navigation-drawer>
 
     <v-main class="pa-10">
       <NuxtPage />
@@ -132,6 +194,17 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useRouter, useRoute } from '#imports'
 type MePayload = { id: number; email: string; name: string | null; role: 'USER' | 'ADMIN' }
 
+const publicNavLinks = [
+  { label: 'O NAS', to: '/about-us' },
+  { label: 'KURSY', to: '/courses' },
+  { label: 'KONTAKT', to: '/contact-us' },
+]
+
+const mobileNav = ref(false)
+const closeNav = () => {
+  mobileNav.value = false
+}
+
 const { data: me, refresh: refreshUser } = await useFetch<MePayload | null>('/api/me', { default: () => null })
 const isAdmin = computed(() => me.value?.role === 'ADMIN')
 
@@ -156,6 +229,7 @@ const setAuthMode = (mode: 'login' | 'register') => {
 }
 
 const openLogin = () => {
+  closeNav()
   setAuthMode('login')
   loginDialog.value = true
 }
@@ -210,6 +284,7 @@ const submitRegister = async () => {
 }
 
 const handleLogout = async () => {
+  closeNav()
   await $fetch('/api/logout', { method: 'POST' })
   await refreshUser()
   router.replace('/')
@@ -223,6 +298,10 @@ watch(
     }
   }
 )
+
+watch(() => route.path, () => {
+  closeNav()
+})
 </script>
 
 <style>
@@ -272,6 +351,37 @@ watch(
 .nav-link:hover {
   text-decoration: none;
   color: #1FAD83;
+}
+
+.site-shell .site-shell-mobile-drawer {
+  background-color: #F2E7CF;
+  color: #0F4557;
+}
+
+.site-shell-mobile-drawer .v-list-item {
+  min-height: unset;
+}
+
+.mobile-nav-heading {
+  padding-top: 16px;
+  padding-bottom: 8px;
+}
+
+.mobile-nav-link {
+  color: #0F4557;
+  text-transform: uppercase;
+  font-weight: 600;
+  width: 100%;
+}
+
+.mobile-nav-link:hover {
+  color: #1FAD83;
+}
+
+.mobile-nav-action {
+  justify-content: flex-start;
+  color: #0F4557;
+  text-transform: uppercase;
 }
 
 body {
