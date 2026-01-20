@@ -1,13 +1,20 @@
 <template>
-  <v-app :class="['site-shell', isAdmin ? 'site-shell--admin' : 'site-shell--public']">
+  <v-app
+    :class="[
+      'site-shell',
+      isAdmin ? 'site-shell--admin' : 'site-shell--public',
+    ]"
+  >
     <v-app-bar elevate-on-scroll height="64" class="site-appbar">
       <v-app-bar-nav-icon
         class="d-flex d-md-none"
         @click="mobileNav = !mobileNav"
       />
-      <v-toolbar-title class="font-weight-medium">
-        {{ isAdmin ? "Panel Administratora" : "E-Learning" }}
+      <v-toolbar-title v-if="isAdmin" class="font-weight-medium">
+        Panel Administratora
       </v-toolbar-title>
+
+      <NuxtLink v-else class="nav-link ml-8" to="/"> <v-container>E-Learning</v-container> </NuxtLink>
       <v-spacer />
 
       <div class="d-none d-md-flex align-center">
@@ -409,8 +416,16 @@ watch(
 
 .site-shell--public {
   background:
-    radial-gradient(1200px circle at 20% 0%, rgba(255, 106, 61, 0.18), transparent 60%),
-    radial-gradient(900px circle at 100% 20%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(
+      1200px circle at 20% 0%,
+      rgba(255, 106, 61, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px circle at 100% 20%,
+      rgba(37, 99, 235, 0.12),
+      transparent 55%
+    ),
     linear-gradient(180deg, #ffffff 0%, rgb(var(--v-theme-background)) 55%);
 }
 
