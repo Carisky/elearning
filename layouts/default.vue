@@ -1,9 +1,12 @@
 <template>
   <v-app class="site-shell">
     <v-app-bar elevate-on-scroll height="64">
-      <v-app-bar-nav-icon class="d-flex d-md-none" @click="mobileNav = !mobileNav" />
+      <v-app-bar-nav-icon
+        class="d-flex d-md-none"
+        @click="mobileNav = !mobileNav"
+      />
       <v-toolbar-title class="font-weight-medium">
-        {{ isAdmin ? 'Panel Administratora' : 'E-Learning' }}
+        {{ isAdmin ? "Panel Administratora" : "E-Learning" }}
       </v-toolbar-title>
       <v-spacer />
 
@@ -17,8 +20,22 @@
           <NuxtLink class="nav-link mr-4" to="/about-us">O NAS</NuxtLink>
           <NuxtLink class="nav-link mr-4" to="/courses">KURSY</NuxtLink>
           <NuxtLink class="nav-link mr-4" to="/contact-us">KONTAKT</NuxtLink>
+
           <template v-if="me">
-            <NuxtLink class="nav-link mr-4" to="/my-profile">Moje konto</NuxtLink>
+            <NuxtLink class="nav-link mr-4" to="/my-profile"
+              >Moje konto</NuxtLink
+            >
+          </template>
+          <v-btn icon variant="text" class="me-2" to="/buy">
+            <v-badge
+              :content="cart.count.value"
+              :model-value="cart.count.value > 0"
+              color="primary"
+            >
+              <v-icon>mdi-cart</v-icon>
+            </v-badge>
+          </v-btn>
+          <template v-if="me">
             <v-btn text @click="handleLogout">Wyloguj</v-btn>
           </template>
           <template v-else>
@@ -53,12 +70,15 @@
           </v-list-item>
         </template>
         <template v-else>
-          <v-list-item
-            v-for="link in publicNavLinks"
-            :key="link.to"
-          >
+          <v-list-item v-for="link in publicNavLinks" :key="link.to">
             <NuxtLink class="mobile-nav-link" :to="link.to" @click="closeNav">
               {{ link.label }}
+            </NuxtLink>
+          </v-list-item>
+
+          <v-list-item>
+            <NuxtLink class="mobile-nav-link" to="/buy" @click="closeNav">
+              KOSZYK ({{ cart.count.value }})
             </NuxtLink>
           </v-list-item>
 
@@ -66,7 +86,11 @@
 
           <template v-if="me">
             <v-list-item>
-              <NuxtLink class="mobile-nav-link" to="/my-profile" @click="closeNav">
+              <NuxtLink
+                class="mobile-nav-link"
+                to="/my-profile"
+                @click="closeNav"
+              >
                 Moje konto
               </NuxtLink>
             </v-list-item>
@@ -94,7 +118,7 @@
     <v-dialog v-if="!me" v-model="loginDialog" max-width="420" persistent>
       <v-card>
         <v-card-title>
-          {{ authMode === 'login' ? 'Logowanie' : 'Rejestracja' }}
+          {{ authMode === "login" ? "Logowanie" : "Rejestracja" }}
         </v-card-title>
         <v-card-text>
           <v-alert
@@ -122,7 +146,9 @@
             {{ registerSuccess }}
           </v-alert>
           <v-form
-            @submit.prevent="authMode === 'login' ? submitLogin() : submitRegister()"
+            @submit.prevent="
+              authMode === 'login' ? submitLogin() : submitRegister()
+            "
           >
             <template v-if="authMode === 'login'">
               <v-text-field
@@ -139,11 +165,7 @@
               />
             </template>
             <template v-else>
-              <v-text-field
-                label="Имя"
-                v-model="registerForm.name"
-                required
-              />
+              <v-text-field label="Имя" v-model="registerForm.name" required />
               <v-text-field
                 label="Email"
                 v-model="registerForm.email"
@@ -161,13 +183,23 @@
           <p class="text-caption">
             <template v-if="authMode === 'login'">
               Nie masz konta?
-              <v-btn text variant="text" class="pa-0" @click="setAuthMode('register')">
+              <v-btn
+                text
+                variant="text"
+                class="pa-0"
+                @click="setAuthMode('register')"
+              >
                 Zarejestruj śię
               </v-btn>
             </template>
             <template v-else>
               Jusz masz konto?
-              <v-btn text variant="text" class="pa-0" @click="setAuthMode('login')">
+              <v-btn
+                text
+                variant="text"
+                class="pa-0"
+                @click="setAuthMode('login')"
+              >
                 Zaloguj
               </v-btn>
             </template>
@@ -181,7 +213,7 @@
             color="primary"
             @click="authMode === 'login' ? submitLogin() : submitRegister()"
           >
-            {{ authMode === 'login' ? 'Zaloguj' : 'Zarejestruj' }}
+            {{ authMode === "login" ? "Zaloguj" : "Zarejestruj" }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -190,150 +222,197 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { useRouter, useRoute } from '#imports'
-type MePayload = { id: number; email: string; name: string | null; role: 'USER' | 'ADMIN' }
+import { ref, reactive, computed, watch } from "vue";
+import { useRouter, useRoute } from "#imports";
+type MePayload = {
+  id: number;
+  email: string;
+  name: string | null;
+  role: "USER" | "ADMIN";
+};
 
 const publicNavLinks = [
-  { label: 'O NAS', to: '/about-us' },
-  { label: 'KURSY', to: '/courses' },
-  { label: 'KONTAKT', to: '/contact-us' },
-]
+  { label: "O NAS", to: "/about-us" },
+  { label: "KURSY", to: "/courses" },
+  { label: "KONTAKT", to: "/contact-us" },
+];
 
-const mobileNav = ref(false)
+const mobileNav = ref(false);
 const closeNav = () => {
-  mobileNav.value = false
-}
+  mobileNav.value = false;
+};
 
-const { data: me, refresh: refreshUser } = await useFetch<MePayload | null>('/api/me', { default: () => null })
-const isAdmin = computed(() => me.value?.role === 'ADMIN')
+const { data: me, refresh: refreshUser } = await useFetch<MePayload | null>(
+  "/api/me",
+  { key: "me", default: () => null },
+);
+const isAdmin = computed(() => me.value?.role === "ADMIN");
 
-const authMode = ref<'login' | 'register'>('login')
-const loginDialog = ref(false)
-const loginError = ref('')
-const loginLoading = ref(false)
-const loginForm = reactive({ email: '', password: '' })
-const registerForm = reactive({ name: '', email: '', password: '' })
-const registerError = ref('')
-const registerSuccess = ref('')
-const registerLoading = ref(false)
+const cart = useCart();
 
-const router = useRouter()
-const route = useRoute()
+const authMode = ref<"login" | "register">("login");
+const loginDialog = ref(false);
+const loginError = ref("");
+const loginLoading = ref(false);
+const loginForm = reactive({ email: "", password: "" });
+const registerForm = reactive({ name: "", email: "", password: "" });
+const registerError = ref("");
+const registerSuccess = ref("");
+const registerLoading = ref(false);
 
-const setAuthMode = (mode: 'login' | 'register') => {
-  authMode.value = mode
-  loginError.value = ''
-  registerError.value = ''
-  registerSuccess.value = ''
-}
+const router = useRouter();
+const route = useRoute();
+
+const setAuthMode = (mode: "login" | "register") => {
+  authMode.value = mode;
+  loginError.value = "";
+  registerError.value = "";
+  registerSuccess.value = "";
+};
 
 const openLogin = () => {
-  closeNav()
-  setAuthMode('login')
-  loginDialog.value = true
-}
+  closeNav();
+  setAuthMode("login");
+  loginDialog.value = true;
+};
 
 const closeLogin = () => {
-  loginDialog.value = false
-  setAuthMode('login')
-}
+  loginDialog.value = false;
+  setAuthMode("login");
+};
 
-const loginAndRedirect = async (credentials: { email: string; password: string }) => {
-  loginError.value = ''
-  loginLoading.value = true
+const loginAndRedirect = async (credentials: {
+  email: string;
+  password: string;
+}) => {
+  loginError.value = "";
+  loginLoading.value = true;
   try {
-    const payload = await $fetch('/api/login', {
-      method: 'POST',
+    const payload = await $fetch("/api/login", {
+      method: "POST",
       body: credentials,
-    })
-    await refreshUser()
-    closeLogin()
-    loginForm.email = ''
-    loginForm.password = ''
-    const destination = payload?.role === 'ADMIN' ? '/admin' : '/'
+    });
+    await refreshUser();
+    cart.setAuthenticatedUser(payload?.id ?? null);
+    await cart.mergeLocalIntoServer();
+    closeLogin();
+    loginForm.email = "";
+    loginForm.password = "";
+    const redirect =
+      typeof route.query.redirect === "string" ? route.query.redirect : "";
+    const destination =
+      payload?.role === "ADMIN"
+        ? "/admin"
+        : redirect.startsWith("/")
+          ? redirect
+          : "/";
     if (route.path !== destination) {
-      router.replace(destination)
+      router.replace(destination);
     }
-    return payload
+    return payload;
   } catch (error: any) {
-    loginError.value = error?.data?.message ?? error?.message ?? 'Ошибка при входе'
-    return null
+    loginError.value =
+      error?.data?.message ?? error?.message ?? "Ошибка при входе";
+    return null;
   } finally {
-    loginLoading.value = false
+    loginLoading.value = false;
   }
-}
+};
 
 const submitLogin = async () => {
   await loginAndRedirect({
     email: loginForm.email,
     password: loginForm.password,
-  })
-}
+  });
+};
 
 const submitRegister = async () => {
-  registerError.value = ''
-  registerSuccess.value = ''
-  registerLoading.value = true
+  registerError.value = "";
+  registerSuccess.value = "";
+  registerLoading.value = true;
   const credentials = {
     email: registerForm.email,
     password: registerForm.password,
-  }
+  };
   try {
-    await $fetch('/api/register', {
-      method: 'POST',
+    await $fetch("/api/register", {
+      method: "POST",
       body: registerForm,
-    })
-    registerSuccess.value = 'Zarejestrowano.'
-    const loginPayload = await loginAndRedirect(credentials)
+    });
+    registerSuccess.value = "Zarejestrowano.";
+    const loginPayload = await loginAndRedirect(credentials);
     if (loginPayload) {
-      registerForm.name = ''
-      registerForm.email = ''
-      registerForm.password = ''
+      registerForm.name = "";
+      registerForm.email = "";
+      registerForm.password = "";
     }
   } catch (err: any) {
     registerError.value =
-      err?.data?.message ?? err?.message ?? 'Nie udalo śie zarejestrować'
+      err?.data?.message ?? err?.message ?? "Nie udalo śie zarejestrować";
   } finally {
-    registerLoading.value = false
+    registerLoading.value = false;
   }
-}
+};
 
 const handleLogout = async () => {
-  closeNav()
-  await $fetch('/api/logout', { method: 'POST' })
-  await refreshUser()
-  router.replace('/')
-}
+  closeNav();
+  await $fetch("/api/logout", { method: "POST" });
+  await refreshUser();
+  cart.setAuthenticatedUser(null);
+  router.replace("/");
+};
 
 watch(
   () => isAdmin.value,
   (admin) => {
-    if (admin && process.client && !route.path.startsWith('/admin')) {
-      router.replace('/admin')
+    if (admin && process.client && !route.path.startsWith("/admin")) {
+      router.replace("/admin");
     }
-  }
-)
+  },
+);
 
-watch(() => route.path, () => {
-  closeNav()
-})
+watch(
+  () => route.path,
+  () => {
+    closeNav();
+  },
+);
+
+watch(
+  () => me.value?.id ?? null,
+  async (userId) => {
+    cart.setAuthenticatedUser(userId);
+    if (userId) {
+      await cart.mergeLocalIntoServer();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.query.login,
+  (value) => {
+    if (!value || me.value) return;
+    openLogin();
+  },
+  { immediate: true },
+);
 </script>
 
 <style>
 .site-shell {
   min-height: 100vh;
-  background-color: #F2E7CF;
+  background-color: #f2e7cf;
 }
 
 .site-shell v-app-bar {
-  background: #D1E1CB !important;
+  background: #d1e1cb !important;
 }
 
 .site-shell .v-toolbar-title,
 .site-shell .nav-link,
 .site-shell .v-btn {
-  color: #0F4557 !important;
+  color: #0f4557 !important;
 }
 
 .site-shell .v-btn--text:hover {
@@ -341,17 +420,17 @@ watch(() => route.path, () => {
 }
 
 .site-shell .v-card {
-  background-color: #D1E1CB !important;
-  color: #0F4557 !important;
+  background-color: #d1e1cb !important;
+  color: #0f4557 !important;
 }
 
 .site-shell .v-alert {
   background-color: rgba(209, 225, 203, 0.9);
-  color: #0F4557;
+  color: #0f4557;
 }
 
-.site-shell .v-btn[class*='v-btn--text']:hover {
-  color: #1FAD83 !important;
+.site-shell .v-btn[class*="v-btn--text"]:hover {
+  color: #1fad83 !important;
 }
 
 .site-shell .v-main {
@@ -359,19 +438,19 @@ watch(() => route.path, () => {
 }
 
 .nav-link {
-  color: #0F4557;
+  color: #0f4557;
   text-transform: uppercase;
   font-size: 0.9rem;
 }
 
 .nav-link:hover {
   text-decoration: none;
-  color: #1FAD83;
+  color: #1fad83;
 }
 
 .site-shell .site-shell-mobile-drawer {
-  background-color: #F2E7CF;
-  color: #0F4557;
+  background-color: #f2e7cf;
+  color: #0f4557;
 }
 
 .site-shell-mobile-drawer .v-list-item {
@@ -384,24 +463,24 @@ watch(() => route.path, () => {
 }
 
 .mobile-nav-link {
-  color: #0F4557;
+  color: #0f4557;
   text-transform: uppercase;
   font-weight: 600;
   width: 100%;
 }
 
 .mobile-nav-link:hover {
-  color: #1FAD83;
+  color: #1fad83;
 }
 
 .mobile-nav-action {
   justify-content: flex-start;
-  color: #0F4557;
+  color: #0f4557;
   text-transform: uppercase;
 }
 
 body {
-  background-color: #F2E7CF;
-  color: #0F4557;
+  background-color: #f2e7cf;
+  color: #0f4557;
 }
 </style>
