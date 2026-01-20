@@ -13,13 +13,24 @@ export default defineEventHandler(async (event) => {
           id: true,
           title: true,
           slug: true,
+          progress: {
+            where: { userId: user.id },
+            select: {
+              progressPercent: true,
+              finished: true,
+            },
+          },
         },
       },
     },
   })
   return enrollments.map((enrollment) => ({
     activatedAt: enrollment.activatedAt,
-    course: enrollment.course,
+    course: {
+      id: enrollment.course.id,
+      title: enrollment.course.title,
+      slug: enrollment.course.slug,
+    },
+    progress: enrollment.course.progress[0] ?? { progressPercent: 0, finished: false },
   }))
 })
-

@@ -1,7 +1,9 @@
 import { getQuery } from 'h3'
 import { prisma } from '../utils/db'
+import { requireAdmin } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
+  await requireAdmin(event)
   const query = getQuery(event)
   const courseId = query.courseId ? Number(query.courseId) : undefined
   const where = courseId && !Number.isNaN(courseId) ? { courseId } : {}
