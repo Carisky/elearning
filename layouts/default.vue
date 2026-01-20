@@ -1,6 +1,6 @@
 <template>
-  <v-app class="site-shell">
-    <v-app-bar elevate-on-scroll height="64">
+  <v-app :class="['site-shell', isAdmin ? 'site-shell--admin' : 'site-shell--public']">
+    <v-app-bar elevate-on-scroll height="64" class="site-appbar">
       <v-app-bar-nav-icon
         class="d-flex d-md-none"
         @click="mobileNav = !mobileNav"
@@ -41,6 +41,9 @@
           <template v-else>
             <v-btn text class="me-2" @click="openLogin">Zaloguj</v-btn>
           </template>
+          <v-btn color="primary" variant="flat" class="ms-2" to="/courses">
+            Get started
+          </v-btn>
         </template>
       </div>
     </v-app-bar>
@@ -111,7 +114,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="pa-10">
+    <v-main class="site-main">
       <NuxtPage />
     </v-main>
 
@@ -402,55 +405,48 @@ watch(
 <style>
 .site-shell {
   min-height: 100vh;
-  background-color: #f2e7cf;
 }
 
-.site-shell v-app-bar {
-  background: #d1e1cb !important;
+.site-shell--public {
+  background:
+    radial-gradient(1200px circle at 20% 0%, rgba(255, 106, 61, 0.18), transparent 60%),
+    radial-gradient(900px circle at 100% 20%, rgba(37, 99, 235, 0.12), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, rgb(var(--v-theme-background)) 55%);
 }
 
-.site-shell .v-toolbar-title,
-.site-shell .nav-link,
-.site-shell .v-btn {
-  color: #0f4557 !important;
+.site-shell--admin {
+  background: rgb(var(--v-theme-background));
 }
 
-.site-shell .v-btn--text:hover {
-  background-color: rgba(120, 206, 139, 0.12);
+.site-appbar {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
 }
 
-.site-shell .v-card {
-  background-color: #d1e1cb !important;
-  color: #0f4557 !important;
-}
-
-.site-shell .v-alert {
-  background-color: rgba(209, 225, 203, 0.9);
-  color: #0f4557;
-}
-
-.site-shell .v-btn[class*="v-btn--text"]:hover {
-  color: #1fad83 !important;
-}
-
-.site-shell .v-main {
+.site-main {
   background-color: transparent;
 }
 
 .nav-link {
-  color: #0f4557;
+  color: rgb(var(--v-theme-on-background));
   text-transform: uppercase;
   font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
 }
 
 .nav-link:hover {
   text-decoration: none;
-  color: #1fad83;
+  opacity: 1;
 }
 
 .site-shell .site-shell-mobile-drawer {
-  background-color: #f2e7cf;
-  color: #0f4557;
+  background-color: rgba(255, 255, 255, 0.92);
+  color: rgb(var(--v-theme-on-background));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .site-shell-mobile-drawer .v-list-item {
@@ -463,24 +459,24 @@ watch(
 }
 
 .mobile-nav-link {
-  color: #0f4557;
+  color: rgb(var(--v-theme-on-background));
   text-transform: uppercase;
   font-weight: 600;
   width: 100%;
 }
 
 .mobile-nav-link:hover {
-  color: #1fad83;
+  opacity: 1;
 }
 
 .mobile-nav-action {
   justify-content: flex-start;
-  color: #0f4557;
+  color: rgb(var(--v-theme-on-background));
   text-transform: uppercase;
 }
 
 body {
-  background-color: #f2e7cf;
-  color: #0f4557;
+  background-color: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
 }
 </style>

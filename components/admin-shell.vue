@@ -21,6 +21,12 @@ const sections = [
     helper: 'Создание контента',
     path: '/admin/content',
   },
+  {
+    id: 'site',
+    label: 'Site content',
+    helper: 'Landing page sections, banners, stats',
+    path: '/admin/site',
+  },
 ] as const
 
 const route = useRoute()
