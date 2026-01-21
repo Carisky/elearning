@@ -12,6 +12,15 @@ const createSlug = (value: string) => {
     .substring(0, 128)
 }
 
+const isUniqueConstraintError = (error: any, field: string) => {
+  if (!error || typeof error !== 'object') return false
+  if (error.code !== 'P2002') return false
+  const target = error?.meta?.target
+  if (Array.isArray(target)) return target.includes(field)
+  if (typeof target === 'string') return target.includes(field)
+  return false
+}
+
 export default defineEventHandler(async (event) => {
   const admin = await requireAdmin(event)
   const body = await readBody<{
@@ -38,17 +47,44 @@ export default defineEventHandler(async (event) => {
   const currency = (body.currency ?? 'PLN').toUpperCase()
   const status = body.status ?? 'DRAFT'
 
-  const course = await prisma.course.create({
-    data: {
-      categoryId: body.categoryId,
-      title: body.title.trim(),
-      slug,
-      priceCents,
-      currency,
-      status,
-      createdById: admin.id,
-    },
-  })
+  const baseSlug = slug
+  let course:
+    | {
+        id: number
+        title: string
+        slug: string
+        priceCents: number
+        currency: string
+        status: any
+        categoryId: number
+        createdById: number
+      }
+    | null = null
+
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`
+    try {
+      course = await prisma.course.create({
+        data: {
+          categoryId: body.categoryId,
+          title: body.title.trim(),
+          slug: candidate,
+          priceCents,
+          currency,
+          status,
+          createdById: admin.id,
+        },
+      })
+      break
+    } catch (error: any) {
+      if (isUniqueConstraintError(error, 'slug')) continue
+      throw error
+    }
+  }
+
+  if (!course) {
+    throw createError({ statusCode: 409, statusMessage: 'Slug already exists' })
+  }
 
   return {
     id: course.id,

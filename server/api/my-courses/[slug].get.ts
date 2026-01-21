@@ -120,7 +120,7 @@ export default defineEventHandler(async (event) => {
       position: item.position,
       isRequired: item.isRequired,
       chapterContent: item.chapter?.contentJson && typeof item.chapter.contentJson === 'object'
-        ? (item.chapter.contentJson as any)?.body ?? null
+        ? item.chapter.contentJson
         : null,
       assessment: item.assessment
         ? {
@@ -140,4 +140,3 @@ export default defineEventHandler(async (event) => {
     })),
   }
 })
-

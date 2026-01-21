@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
   return prisma.courseItem.findMany({
     where,
     include: {
+      parent: { select: { id: true, title: true, type: true } },
       chapter: true,
       assessment: {
         include: {

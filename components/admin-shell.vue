@@ -6,25 +6,19 @@ const sections = [
   {
     id: 'categories',
     label: 'Категории',
-    helper: 'Создание и управление категориями',
+    helper: 'Создание, редактирование, сортировка',
     path: '/admin/categories',
   },
   {
     id: 'courses',
     label: 'Курсы',
-    helper: 'Создание и редактирование курсов',
+    helper: 'Мастер: поля, разделы, тесты/экзамены',
     path: '/admin/courses',
   },
   {
-    id: 'content',
-    label: 'Разделы / тесты',
-    helper: 'Создание контента',
-    path: '/admin/content',
-  },
-  {
     id: 'site',
-    label: 'Site content',
-    helper: 'Landing page sections, banners, stats',
+    label: 'Сайт',
+    helper: 'Контент главной страницы',
     path: '/admin/site',
   },
 ] as const
@@ -37,24 +31,16 @@ const activeSection = computed(() =>
 
 <template>
   <div class="admin-shell">
-    <v-navigation-drawer
-      permanent
-      width="240"
-      class="admin-shell__drawer"
-      floating
-      app
-    >
+    <v-navigation-drawer permanent width="260" class="admin-shell__drawer" floating>
       <div class="admin-shell__header">
         <div class="admin-shell__label">Админка</div>
-        <div class="admin-shell__subtitle">Управление курсами</div>
+        <div class="admin-shell__subtitle">Управление платформой</div>
       </div>
+
       <v-divider />
-      <v-list dense nav>
-        <v-list-item
-          v-for="section in sections"
-          :key="section.id"
-          class="admin-shell__item"
-        >
+
+      <v-list density="compact" nav>
+        <v-list-item v-for="section in sections" :key="section.id" class="admin-shell__item">
           <NuxtLink
             :to="section.path"
             class="admin-shell__link"
@@ -132,7 +118,7 @@ const activeSection = computed(() =>
 }
 
 .admin-shell__content {
-  margin-left: 240px;
-  width: calc(100% - 240px);
+  margin-left: 260px;
+  width: calc(100% - 260px);
 }
 </style>

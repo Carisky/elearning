@@ -453,20 +453,17 @@ const year = new Date().getFullYear();
   color: rgba(17, 24, 39, 0.72);
 }
 
-<<<<<<< ours
 .landing-hero-grid {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  width: 100%;
 }
 
 .landing-hero-right {
   display: flex;
   justify-content: center;
 }
-
-=======
->>>>>>> theirs
 .landing-stat {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(17, 24, 39, 0.06);

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="course-player">
     <v-container fluid class="pa-0">
       <v-row no-gutters>
@@ -66,7 +66,8 @@
 
               <v-card v-if="currentItem.type === 'CHAPTER'" elevation="1">
                 <v-card-text class="chapter-content">
-                  {{ currentItem.chapterContent || 'Brak treści.' }}
+                  <RichTextViewer v-if="currentChapterDelta" :model-value="currentChapterDelta" />
+                  <div v-else class="text-medium-emphasis">Brak tresci.</div>
                 </v-card-text>
                 <v-divider />
                 <v-card-actions v-if="!isReadOnly" class="justify-end">
@@ -189,6 +190,8 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
 
+import RichTextViewer from '~/components/rich-text-viewer.vue'
+
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
 
@@ -206,7 +209,7 @@ type MyCoursePayload = {
     title: string
     position: number
     isRequired: boolean
-    chapterContent: string | null
+    chapterContent: any | null
     assessment: null | {
       minPassScore: number
       attemptsLimit: number | null
@@ -247,6 +250,19 @@ const currentItem = computed(() => {
   if (!items.length) return null
   const id = selectedItemId.value ?? items[0]?.id ?? null
   return items.find((i) => i.id === id) ?? items[0] ?? null
+})
+
+const currentChapterDelta = computed<any | null>(() => {
+  const item = currentItem.value
+  if (!item || item.type !== 'CHAPTER') return null
+  const raw = item.chapterContent
+  if (!raw) return null
+  if (typeof raw === 'object' && Array.isArray((raw as any).ops)) return raw
+  if (typeof raw === 'object' && typeof (raw as any).body === 'string') {
+    return { ops: [{ insert: `${(raw as any).body}\n` }] }
+  }
+  if (typeof raw === 'string') return { ops: [{ insert: `${raw}\n` }] }
+  return null
 })
 
 const hasPassedExam = computed(() => {
@@ -476,4 +492,7 @@ const submitAssessment = async () => {
   gap: 24px;
 }
 </style>
+
+
+
 

@@ -106,6 +106,7 @@ model Course {
 model CourseItem {
   id         Int            @id @default(autoincrement())
   courseId   Int
+  parentId   Int?
   type       CourseItemType
   title      String
   position   Int
@@ -115,12 +116,15 @@ model CourseItem {
   updatedAt DateTime @updatedAt
 
   course       Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent       CourseItem?              @relation("CourseItemParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children     CourseItem[]             @relation("CourseItemParent")
   chapter      CourseChapter?
   assessment   Assessment?
   userProgress UserCourseItemProgress[]
 
   @@unique([courseId, position])
   @@index([courseId, type])
+  @@index([parentId])
 }
 
 model CourseChapter {
