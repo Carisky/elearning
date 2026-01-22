@@ -42,7 +42,7 @@ watch(
 const save = async () => {
   if (!validId.value) return
   if (!form.title.trim()) {
-    notification.value = { type: 'error', message: 'Введите название категории' }
+    notification.value = { type: 'error', message: 'Podaj nazwę kategorii' }
     return
   }
   saving.value = true
@@ -57,9 +57,9 @@ const save = async () => {
       },
     })
     await refresh()
-    notification.value = { type: 'success', message: 'Категория сохранена' }
+    notification.value = { type: 'success', message: 'Kategoria została zapisana' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: e?.data?.message ?? e?.message ?? 'Не удалось сохранить' }
+    notification.value = { type: 'error', message: e?.data?.message ?? e?.message ?? 'Nie udało się zapisać' }
   } finally {
     saving.value = false
   }
@@ -67,7 +67,9 @@ const save = async () => {
 
 const deleteCategory = async () => {
   if (!validId.value) return
-  const ok = window.confirm('Удалить категорию? Курсы в этой категории останутся без категории (операция может быть запрещена).')
+  const ok = window.confirm(
+    'Usunąć kategorię? Kursy w tej kategorii pozostaną bez kategorii (operacja może być zablokowana).',
+  )
   if (!ok) return
   deleting.value = true
   notification.value = null
@@ -75,7 +77,7 @@ const deleteCategory = async () => {
     await $fetch(`/api/categories/${categoryId.value}`, { method: 'DELETE' })
     await navigateTo('/admin/categories')
   } catch (e: any) {
-    notification.value = { type: 'error', message: e?.data?.message ?? e?.message ?? 'Не удалось удалить' }
+    notification.value = { type: 'error', message: e?.data?.message ?? e?.message ?? 'Nie udało się usunąć' }
   } finally {
     deleting.value = false
   }
@@ -88,14 +90,14 @@ const deleteCategory = async () => {
       <v-container fluid>
         <v-row class="mb-4" align="center" justify="space-between">
           <v-col cols="12" md="6">
-            <div class="text-h5 font-weight-bold">Редактирование категории</div>
+            <div class="text-h5 font-weight-bold">Edycja kategorii</div>
             <div class="text-body-2 text-medium-emphasis">
-              Обновите название, slug и порядок.
+              Zmień nazwę, slug i kolejność.
             </div>
           </v-col>
           <v-col cols="12" md="6" class="d-flex justify-end">
             <v-btn variant="text" prepend-icon="mdi-arrow-left" to="/admin/categories">
-              Назад
+              Wstecz
             </v-btn>
           </v-col>
         </v-row>
@@ -103,10 +105,10 @@ const deleteCategory = async () => {
         <v-row>
           <v-col cols="12" md="8" lg="6">
             <v-alert v-if="!validId" type="error" variant="tonal" class="mb-4">
-              Некорректный id категории.
+              Nieprawidłowe id kategorii.
             </v-alert>
             <v-alert v-else-if="error" type="error" variant="tonal" class="mb-4">
-              Не удалось загрузить категорию.
+              Nie udało się załadować kategorii.
             </v-alert>
             <v-alert v-if="notification" :type="notification.type" variant="tonal" class="mb-4">
               {{ notification.message }}
@@ -116,13 +118,13 @@ const deleteCategory = async () => {
               <v-card-text>
                 <v-progress-linear v-if="pending" indeterminate color="primary" class="mb-4" />
                 <v-form v-else @submit.prevent="save">
-                  <v-text-field v-model="form.title" label="Название" required class="mb-3" />
+                  <v-text-field v-model="form.title" label="Nazwa" required class="mb-3" />
                   <v-text-field v-model="form.slug" label="Slug" class="mb-3" />
-                  <v-text-field v-model.number="form.sortOrder" label="Сортировка" type="number" class="mb-6" />
+                  <v-text-field v-model.number="form.sortOrder" label="Sortowanie" type="number" class="mb-6" />
 
                   <div class="d-flex flex-wrap gap-3 align-center">
                     <v-btn type="submit" color="primary" :loading="saving" prepend-icon="mdi-content-save">
-                      Сохранить
+                      Zapisz
                     </v-btn>
                     <v-btn
                       color="error"
@@ -131,7 +133,7 @@ const deleteCategory = async () => {
                       prepend-icon="mdi-delete"
                       @click="deleteCategory"
                     >
-                      Удалить
+                      Usuń
                     </v-btn>
                   </div>
                 </v-form>

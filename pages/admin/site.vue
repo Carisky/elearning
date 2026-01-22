@@ -173,9 +173,9 @@ const save = async () => {
 
         <v-row>
           <v-col cols="12" lg="8">
-            <v-card>
+              <v-card>
               <v-card-title class="d-flex align-center justify-space-between">
-                Site content — Home
+                Treść strony — Strona główna
                 <v-btn color="primary" :loading="saving" @click="save">Zapisz</v-btn>
               </v-card-title>
               <v-divider />
@@ -183,39 +183,39 @@ const save = async () => {
                 <v-progress-linear v-if="pending" indeterminate color="primary" class="mb-4" />
 
                 <h3 class="text-h6 mb-3">SEO</h3>
-                <v-text-field v-model="form.seo.title" label="Title" class="mb-3" />
-                <v-textarea v-model="form.seo.description" label="Description" rows="2" class="mb-6" />
+                <v-text-field v-model="form.seo.title" label="Tytuł" class="mb-3" />
+                <v-textarea v-model="form.seo.description" label="Opis" rows="2" class="mb-6" />
 
-                <h3 class="text-h6 mb-3">Hero</h3>
-                <v-text-field v-model="form.hero.eyebrow" label="Eyebrow" class="mb-3" />
-                <v-text-field v-model="form.hero.titleTop" label="Title (line 1)" class="mb-3" />
-                <v-text-field v-model="form.hero.titleBottom" label="Title (line 2)" class="mb-3" />
-                <v-textarea v-model="form.hero.subtitle" label="Subtitle" rows="3" class="mb-3" />
+                <h3 class="text-h6 mb-3">Sekcja hero</h3>
+                <v-text-field v-model="form.hero.eyebrow" label="Nadtytuł" class="mb-3" />
+                <v-text-field v-model="form.hero.titleTop" label="Tytuł (linia 1)" class="mb-3" />
+                <v-text-field v-model="form.hero.titleBottom" label="Tytuł (linia 2)" class="mb-3" />
+                <v-textarea v-model="form.hero.subtitle" label="Podtytuł" rows="3" class="mb-3" />
 
                 <v-row>
                   <v-col cols="12" md="6">
-                    <v-text-field v-model="form.hero.primaryCta.label" label="Primary CTA label" class="mb-3" />
-                    <v-text-field v-model="form.hero.primaryCta.href" label="Primary CTA link" class="mb-3" />
+                    <v-text-field v-model="form.hero.primaryCta.label" label="Tekst przycisku (główny)" class="mb-3" />
+                    <v-text-field v-model="form.hero.primaryCta.href" label="Link (główny)" class="mb-3" />
                   </v-col>
                   <v-col cols="12" md="6">
-                    <v-text-field v-model="form.hero.secondaryCta!.label" label="Secondary CTA label" class="mb-3" />
-                    <v-text-field v-model="form.hero.secondaryCta!.href" label="Secondary CTA link" class="mb-3" />
+                    <v-text-field v-model="form.hero.secondaryCta!.label" label="Tekst przycisku (dodatkowy)" class="mb-3" />
+                    <v-text-field v-model="form.hero.secondaryCta!.href" label="Link (dodatkowy)" class="mb-3" />
                   </v-col>
                 </v-row>
 
-                <v-text-field v-model="form.hero.imageUrl" label="Hero image URL" class="mb-3" />
-                <v-text-field v-model="form.hero.imageAlt" label="Hero image ALT" class="mb-6" />
+                <v-text-field v-model="form.hero.imageUrl" label="URL obrazka hero" class="mb-3" />
+                <v-text-field v-model="form.hero.imageAlt" label="ALT obrazka hero" class="mb-6" />
 
                 <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
-                  Stats
-                  <v-btn variant="text" @click="addStat">Add</v-btn>
+                  Statystyki
+                  <v-btn variant="text" @click="addStat">Dodaj</v-btn>
                 </h3>
                 <v-row v-for="(item, idx) in form.stats" :key="`stat-${idx}`" class="mb-2">
                   <v-col cols="12" md="4">
-                    <v-text-field v-model="item.value" label="Value" />
+                    <v-text-field v-model="item.value" label="Wartość" />
                   </v-col>
                   <v-col cols="12" md="7">
-                    <v-text-field v-model="item.label" label="Label" />
+                    <v-text-field v-model="item.label" label="Etykieta" />
                   </v-col>
                   <v-col cols="12" md="1" class="d-flex align-center justify-end">
                     <v-btn icon variant="text" @click="removeStat(idx)">
@@ -227,18 +227,18 @@ const save = async () => {
                 <v-divider class="my-6" />
 
                 <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
-                  Feature cards
-                  <v-btn variant="text" @click="addFeature">Add</v-btn>
+                  Karty funkcji
+                  <v-btn variant="text" @click="addFeature">Dodaj</v-btn>
                 </h3>
                 <v-row v-for="(item, idx) in form.featureCards" :key="`feature-${idx}`" class="mb-2">
                   <v-col cols="12" md="3">
-                    <v-text-field v-model="item.icon" label="Icon (mdi-*)" />
+                    <v-text-field v-model="item.icon" label="Ikona (mdi-*)" />
                   </v-col>
                   <v-col cols="12" md="4">
-                    <v-text-field v-model="item.title" label="Title" />
+                    <v-text-field v-model="item.title" label="Tytuł" />
                   </v-col>
                   <v-col cols="12" md="4">
-                    <v-text-field v-model="item.description" label="Description" />
+                    <v-text-field v-model="item.description" label="Opis" />
                   </v-col>
                   <v-col cols="12" md="1" class="d-flex align-center justify-end">
                     <v-btn icon variant="text" @click="removeFeature(idx)">
@@ -250,18 +250,18 @@ const save = async () => {
                 <v-divider class="my-6" />
 
                 <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
-                  Promo tiles
-                  <v-btn variant="text" @click="addPromo">Add</v-btn>
+                  Sekcje promocyjne
+                  <v-btn variant="text" @click="addPromo">Dodaj</v-btn>
                 </h3>
                 <v-row v-for="(item, idx) in form.promoTiles" :key="`promo-${idx}`" class="mb-2">
                   <v-col cols="12" md="2">
-                    <v-select v-model="item.variant" :items="['light', 'accent']" label="Variant" />
+                    <v-select v-model="item.variant" :items="['light', 'accent']" label="Wariant" />
                   </v-col>
                   <v-col cols="12" md="3">
-                    <v-text-field v-model="item.title" label="Title" />
+                    <v-text-field v-model="item.title" label="Tytuł" />
                   </v-col>
                   <v-col cols="12" md="4">
-                    <v-text-field v-model="item.description" label="Description" />
+                    <v-text-field v-model="item.description" label="Opis" />
                   </v-col>
                   <v-col cols="12" md="2">
                     <v-text-field v-model="item.href" label="Link" />
@@ -276,18 +276,18 @@ const save = async () => {
                 <v-divider class="my-6" />
 
                 <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
-                  Banners
-                  <v-btn variant="text" @click="addBanner">Add</v-btn>
+                  Banery
+                  <v-btn variant="text" @click="addBanner">Dodaj</v-btn>
                 </h3>
                 <v-row v-for="(item, idx) in form.banners" :key="`banner-${idx}`" class="mb-2">
                   <v-col cols="12" md="3">
-                    <v-text-field v-model="item.title" label="Title" />
+                    <v-text-field v-model="item.title" label="Tytuł" />
                   </v-col>
                   <v-col cols="12" md="3">
-                    <v-text-field v-model="item.subtitle" label="Subtitle" />
+                    <v-text-field v-model="item.subtitle" label="Podtytuł" />
                   </v-col>
                   <v-col cols="12" md="3">
-                    <v-text-field v-model="item.imageUrl" label="Image URL" />
+                    <v-text-field v-model="item.imageUrl" label="URL obrazka" />
                   </v-col>
                   <v-col cols="12" md="2">
                     <v-text-field v-model="item.href" label="Link" />
@@ -304,12 +304,12 @@ const save = async () => {
 
           <v-col cols="12" lg="4">
             <v-card class="mb-4">
-              <v-card-title>Preview</v-card-title>
+              <v-card-title>Podgląd</v-card-title>
               <v-divider />
               <v-card-text>
-                <div class="text-caption mb-2">Hero image</div>
+                <div class="text-caption mb-2">Obrazek hero</div>
                 <v-img :src="form.hero.imageUrl" aspect-ratio="1" cover rounded />
-                <div class="text-caption mt-4 mb-2">Banner</div>
+                <div class="text-caption mt-4 mb-2">Baner</div>
                 <v-img :src="form.banners[0]?.imageUrl" aspect-ratio="2.6" cover rounded />
               </v-card-text>
             </v-card>
@@ -319,4 +319,3 @@ const save = async () => {
     </section>
   </AdminShell>
 </template>
-

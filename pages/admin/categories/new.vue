@@ -26,7 +26,7 @@ const slugify = (value: string) =>
 
 const save = async () => {
   if (!form.title.trim()) {
-    notification.value = { type: 'error', message: 'Введите название категории' }
+    notification.value = { type: 'error', message: 'Podaj nazwę kategorii' }
     return
   }
   saving.value = true
@@ -44,7 +44,7 @@ const save = async () => {
   } catch (e: any) {
     notification.value = {
       type: 'error',
-      message: e?.data?.message ?? e?.message ?? 'Не удалось создать категорию',
+      message: e?.data?.message ?? e?.message ?? 'Nie udało się utworzyć kategorii',
     }
   } finally {
     saving.value = false
@@ -58,14 +58,14 @@ const save = async () => {
       <v-container fluid>
         <v-row class="mb-4" align="center" justify="space-between">
           <v-col cols="12" md="6">
-            <div class="text-h5 font-weight-bold">Новая категория</div>
+            <div class="text-h5 font-weight-bold">Nowa kategoria</div>
             <div class="text-body-2 text-medium-emphasis">
-              Создайте категорию для группировки курсов.
+              Utwórz kategorię do grupowania kursów.
             </div>
           </v-col>
           <v-col cols="12" md="6" class="d-flex justify-end">
             <v-btn variant="text" prepend-icon="mdi-arrow-left" to="/admin/categories">
-              Назад
+              Wstecz
             </v-btn>
           </v-col>
         </v-row>
@@ -79,27 +79,27 @@ const save = async () => {
             <v-card>
               <v-card-text>
                 <v-form @submit.prevent="save">
-                  <v-text-field v-model="form.title" label="Название" required class="mb-3" />
+                  <v-text-field v-model="form.title" label="Nazwa" required class="mb-3" />
                   <v-text-field
                     v-model="form.slug"
-                    label="Slug (опционально)"
-                    hint="Если не задан, будет создан автоматически"
+                    label="Slug (opcjonalnie)"
+                    hint="Jeśli puste, zostanie wygenerowane automatycznie"
                     persistent-hint
                     class="mb-3"
                   />
                   <v-text-field
                     v-model.number="form.sortOrder"
-                    label="Сортировка"
+                    label="Sortowanie"
                     type="number"
                     class="mb-6"
                   />
 
                   <div class="d-flex gap-3">
                     <v-btn type="submit" color="primary" :loading="saving" prepend-icon="mdi-content-save">
-                      Создать
+                      Utwórz
                     </v-btn>
                     <v-btn variant="tonal" :disabled="saving" to="/admin/categories">
-                      Отмена
+                      Anuluj
                     </v-btn>
                   </div>
                 </v-form>
@@ -111,4 +111,3 @@ const save = async () => {
     </section>
   </AdminShell>
 </template>
-

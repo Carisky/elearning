@@ -5,20 +5,20 @@ import { useRoute } from '#app'
 const sections = [
   {
     id: 'categories',
-    label: 'Категории',
-    helper: 'Создание, редактирование, сортировка',
+    label: 'Kategorie',
+    helper: 'Tworzenie, edycja, sortowanie',
     path: '/admin/categories',
   },
   {
     id: 'courses',
-    label: 'Курсы',
-    helper: 'Мастер: поля, разделы, тесты/экзамены',
+    label: 'Kursy',
+    helper: 'Kreator: pola, rozdziały, testy/egzaminy',
     path: '/admin/courses',
   },
   {
     id: 'site',
-    label: 'Сайт',
-    helper: 'Контент главной страницы',
+    label: 'Strona',
+    helper: 'Treść strony głównej',
     path: '/admin/site',
   },
 ] as const
@@ -33,8 +33,8 @@ const activeSection = computed(() =>
   <div class="admin-shell">
     <v-navigation-drawer permanent width="260" class="admin-shell__drawer" floating>
       <div class="admin-shell__header">
-        <div class="admin-shell__label">Админка</div>
-        <div class="admin-shell__subtitle">Управление платформой</div>
+        <div class="admin-shell__label">Admin</div>
+        <div class="admin-shell__subtitle">Zarządzanie platformą</div>
       </div>
 
       <v-divider />

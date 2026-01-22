@@ -60,15 +60,15 @@ const notification = ref<Notification | null>(null)
 
 const statusOptions: CourseStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED']
 const statusLabel: Record<CourseStatus, string> = {
-  DRAFT: 'Черновик',
-  PUBLISHED: 'Опубликован',
-  ARCHIVED: 'Архив',
+  DRAFT: 'Szkic',
+  PUBLISHED: 'Opublikowany',
+  ARCHIVED: 'Archiwum',
 }
 
 const typeLabel: Record<CourseItemType, string> = {
-  CHAPTER: 'Раздел',
-  QUIZ: 'Тест',
-  EXAM: 'Экзамен',
+  CHAPTER: 'Rozdział',
+  QUIZ: 'Test',
+  EXAM: 'Egzamin',
 }
 
 const typeIcon: Record<CourseItemType, string> = {
@@ -131,7 +131,7 @@ const loadCourse = async () => {
     courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
     courseForm.status = data.status ?? 'DRAFT'
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось загрузить курс') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować kursu') }
   } finally {
     courseLoading.value = false
   }
@@ -149,7 +149,7 @@ const loadItems = async () => {
   try {
     items.value = await $fetch<CourseItem[]>(`/api/course-items?courseId=${internalCourseId.value}`)
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось загрузить структуру') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować struktury') }
   } finally {
     itemsLoading.value = false
   }
@@ -219,11 +219,11 @@ const errorMessage = (e: any, fallback: string) =>
 
 const createCourse = async () => {
   if (!courseForm.title.trim()) {
-    notification.value = { type: 'error', message: 'Введите название курса' }
+    notification.value = { type: 'error', message: 'Podaj nazwę kursu' }
     return
   }
   if (!courseForm.categoryId) {
-    notification.value = { type: 'error', message: 'Выберите категорию' }
+    notification.value = { type: 'error', message: 'Wybierz kategorię' }
     return
   }
   saving.value = true
@@ -242,10 +242,10 @@ const createCourse = async () => {
     })
     internalCourseId.value = created.id
     await navigateTo(`/admin/courses/${created.id}`)
-    notification.value = { type: 'success', message: 'Курс создан' }
+    notification.value = { type: 'success', message: 'Kurs został utworzony' }
     step.value = 2
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось создать курс') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się utworzyć kursu') }
   } finally {
     saving.value = false
   }
@@ -268,9 +268,9 @@ const saveCourse = async () => {
       },
     })
     await loadCourse()
-    notification.value = { type: 'success', message: 'Курс сохранён' }
+    notification.value = { type: 'success', message: 'Kurs został zapisany' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось сохранить курс') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się zapisać kursu') }
   } finally {
     saving.value = false
   }
@@ -296,7 +296,7 @@ const openAdd = (preset?: Partial<typeof addForm>) => {
 const createItem = async () => {
   if (!internalCourseId.value) return
   if (!addForm.title.trim()) {
-    notification.value = { type: 'error', message: 'Введите название' }
+    notification.value = { type: 'error', message: 'Podaj nazwę' }
     return
   }
   saving.value = true
@@ -316,9 +316,9 @@ const createItem = async () => {
     addDialog.value = false
     await loadItems()
     selectedItemId.value = created.id
-    notification.value = { type: 'success', message: 'Элемент добавлен' }
+    notification.value = { type: 'success', message: 'Element został dodany' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось добавить') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się dodać') }
   } finally {
     saving.value = false
   }
@@ -359,9 +359,9 @@ const updateItemMeta = async () => {
       },
     })
     await loadItems()
-    notification.value = { type: 'success', message: 'Изменения сохранены' }
+    notification.value = { type: 'success', message: 'Zmiany zostały zapisane' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось сохранить') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się zapisać') }
   } finally {
     saving.value = false
   }
@@ -370,7 +370,7 @@ const updateItemMeta = async () => {
 const deleteItem = async () => {
   const item = selectedItem.value
   if (!item) return
-  const ok = window.confirm(`Удалить "${item.title}"? Удалятся и вложенные элементы.`)
+  const ok = window.confirm(`Usunąć "${item.title}"? Zostaną usunięte także elementy zagnieżdżone.`)
   if (!ok) return
   saving.value = true
   notification.value = null
@@ -378,9 +378,9 @@ const deleteItem = async () => {
     await $fetch(`/api/course-items/${item.id}`, { method: 'DELETE' })
     selectedItemId.value = null
     await loadItems()
-    notification.value = { type: 'success', message: 'Элемент удалён' }
+    notification.value = { type: 'success', message: 'Element został usunięty' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось удалить') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się usunąć') }
   } finally {
     saving.value = false
   }
@@ -498,9 +498,9 @@ const saveSelectedContent = async () => {
       })
     }
     await loadItems()
-    notification.value = { type: 'success', message: 'Контент сохранён' }
+    notification.value = { type: 'success', message: 'Treść została zapisana' }
   } catch (e: any) {
-    notification.value = { type: 'error', message: errorMessage(e, 'Не удалось сохранить контент') }
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się zapisać treści') }
   } finally {
     saving.value = false
   }
@@ -514,13 +514,13 @@ const saveSelectedContent = async () => {
         <v-col cols="12" lg="8">
           <div class="d-flex align-center flex-wrap gap-3">
             <div class="text-h5 font-weight-bold">
-              {{ internalCourseId ? 'Мастер курса' : 'Создание курса' }}
+              {{ internalCourseId ? 'Kreator kursu' : 'Tworzenie kursu' }}
             </div>
             <v-chip v-if="internalCourseId" size="small" variant="tonal" prepend-icon="mdi-identifier">
               ID: {{ internalCourseId }}
             </v-chip>
             <v-chip size="small" variant="tonal" prepend-icon="mdi-layers-triple-outline">
-              Элементов: {{ totalItems }}
+              Elementów: {{ totalItems }}
             </v-chip>
             <v-chip v-if="course" size="small" variant="tonal" prepend-icon="mdi-flag-outline">
               {{ statusLabel[course.status] }}
@@ -532,7 +532,7 @@ const saveSelectedContent = async () => {
         </v-col>
         <v-col cols="12" lg="4" class="d-flex justify-end">
           <v-btn variant="text" prepend-icon="mdi-arrow-left" to="/admin/courses">
-            К списку курсов
+            Do listy kursów
           </v-btn>
         </v-col>
       </v-row>
@@ -545,16 +545,16 @@ const saveSelectedContent = async () => {
         <v-stepper-header>
           <v-stepper-item
             :value="1"
-            title="Поля курса"
-            subtitle="Название, цена, категория"
+            title="Pola kursu"
+            subtitle="Nazwa, cena, kategoria"
             editable
             @click="step = 1"
           />
           <v-divider />
           <v-stepper-item
             :value="2"
-            title="Структура"
-            subtitle="Разделы и вложенность"
+            title="Struktura"
+            subtitle="Rozdziały i zagnieżdżenia"
             :disabled="!canGoStructure"
             :editable="canGoStructure"
             @click="canGoStructure && (step = 2)"
@@ -562,8 +562,8 @@ const saveSelectedContent = async () => {
           <v-divider />
           <v-stepper-item
             :value="3"
-            title="Контент"
-            subtitle="Rich text, тесты, экзамены"
+            title="Treść"
+            subtitle="Rich text, testy, egzaminy"
             :disabled="!canGoContent"
             :editable="canGoContent"
             @click="canGoContent && (step = 3)"
@@ -571,8 +571,8 @@ const saveSelectedContent = async () => {
           <v-divider />
           <v-stepper-item
             :value="4"
-            title="Публикация"
-            subtitle="Статус"
+            title="Publikacja"
+            subtitle="Status"
             :disabled="!canGoPublish"
             :editable="canGoPublish"
             @click="canGoPublish && (step = 4)"
@@ -585,22 +585,22 @@ const saveSelectedContent = async () => {
               <v-col cols="12">
                 <v-card>
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Основные поля</span>
+                    <span>Pola podstawowe</span>
                     <v-chip size="small" variant="tonal" prepend-icon="mdi-flag-outline">
                       {{ statusLabel[courseForm.status] }}
                     </v-chip>
                   </v-card-title>
                   <v-card-text>
                     <v-alert variant="tonal" type="info" class="mb-4">
-                      Поля → структура → контент → публикация. Шаги помогают не потеряться.
+                      Pola → struktura → treść → publikacja. Kroki pomagają się nie pogubić.
                     </v-alert>
                     <v-progress-linear v-if="courseLoading" indeterminate color="primary" class="mb-4" />
                     <v-form @submit.prevent="saveCourse">
-                      <v-text-field v-model="courseForm.title" label="Название курса" required class="mb-3" />
+                      <v-text-field v-model="courseForm.title" label="Nazwa kursu" required class="mb-3" />
                       <v-text-field
                         v-model="courseForm.slug"
-                        label="Slug (опционально)"
-                        hint="Если пусто, будет создан автоматически при создании"
+                        label="Slug (opcjonalnie)"
+                        hint="Jeśli puste, zostanie wygenerowane automatycznie"
                         persistent-hint
                         class="mb-3"
                       />
@@ -612,18 +612,18 @@ const saveSelectedContent = async () => {
                             :items="categoryList"
                             item-title="title"
                             item-value="id"
-                            label="Категория"
+                            label="Kategoria"
                             class="mb-3"
                           />
                         </v-col>
                         <v-col cols="12" md="5">
-                          <v-select v-model="courseForm.status" :items="statusOptions" label="Статус" class="mb-3" />
+                          <v-select v-model="courseForm.status" :items="statusOptions" label="Status" class="mb-3" />
                         </v-col>
                       </v-row>
 
                       <v-row>
                         <v-col cols="12" md="7">
-                          <v-text-field v-model="courseForm.price" label="Цена" type="number" class="mb-3" />
+                          <v-text-field v-model="courseForm.price" label="Cena" type="number" class="mb-3" />
                         </v-col>
                         <v-col cols="12" md="5">
                           <v-select
@@ -631,7 +631,7 @@ const saveSelectedContent = async () => {
                             :items="currencyOptions"
                             item-title="view"
                             item-value="code"
-                            label="Валюта"
+                            label="Waluta"
                             class="mb-3"
                           />
                         </v-col>
@@ -639,10 +639,10 @@ const saveSelectedContent = async () => {
 
                       <div class="d-flex flex-wrap gap-3">
                         <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save">
-                          {{ internalCourseId ? 'Сохранить' : 'Создать курс' }}
+                          {{ internalCourseId ? 'Zapisz' : 'Utwórz kurs' }}
                         </v-btn>
                         <v-btn variant="tonal" :disabled="!canGoStructure" prepend-icon="mdi-arrow-right" @click="step = 2">
-                          К структуре
+                          Do struktury
                         </v-btn>
                       </div>
                     </v-form>
@@ -657,25 +657,25 @@ const saveSelectedContent = async () => {
               <v-col cols="12" lg="5">
                 <v-card>
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Дерево курса</span>
+                    <span>Drzewo kursu</span>
                     <v-menu>
                       <template #activator="{ props: menuProps }">
                         <v-btn size="small" variant="tonal" prepend-icon="mdi-plus" v-bind="menuProps">
-                          Добавить
+                          Dodaj
                         </v-btn>
                       </template>
                       <v-list density="compact">
                         <v-list-item @click="openAdd({ type: 'CHAPTER' })">
                           <template #prepend><v-icon>{{ typeIcon.CHAPTER }}</v-icon></template>
-                          <v-list-item-title>Раздел</v-list-item-title>
+                          <v-list-item-title>Rozdział</v-list-item-title>
                         </v-list-item>
                         <v-list-item @click="openAdd({ type: 'QUIZ' })">
                           <template #prepend><v-icon>{{ typeIcon.QUIZ }}</v-icon></template>
-                          <v-list-item-title>Тест</v-list-item-title>
+                          <v-list-item-title>Test</v-list-item-title>
                         </v-list-item>
                         <v-list-item @click="openAdd({ type: 'EXAM' })">
                           <template #prepend><v-icon>{{ typeIcon.EXAM }}</v-icon></template>
-                          <v-list-item-title>Экзамен</v-list-item-title>
+                          <v-list-item-title>Egzamin</v-list-item-title>
                         </v-list-item>
                       </v-list>
                     </v-menu>
@@ -683,7 +683,7 @@ const saveSelectedContent = async () => {
                   <v-card-text>
                     <v-progress-linear v-if="itemsLoading" indeterminate color="primary" class="mb-4" />
                     <v-alert v-if="!itemsLoading && !tree.length" variant="tonal" type="info" class="mb-4">
-                      Добавьте первый раздел или тест.
+                      Dodaj pierwszy rozdział lub test.
                     </v-alert>
                     <v-list density="compact" class="py-0">
                       <v-list-item
@@ -710,7 +710,7 @@ const saveSelectedContent = async () => {
               <v-col cols="12" lg="7">
                 <v-card>
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Настройки элемента</span>
+                    <span>Ustawienia elementu</span>
                     <div class="d-flex gap-2">
                       <v-btn
                         v-if="selectedItem?.type === 'CHAPTER'"
@@ -719,16 +719,16 @@ const saveSelectedContent = async () => {
                         prepend-icon="mdi-plus"
                         @click="openAdd({ type: 'CHAPTER', parentId: selectedItemId })"
                       >
-                        Подраздел
+                        Podrozdział
                       </v-btn>
                       <v-btn size="small" variant="text" prepend-icon="mdi-delete" color="error" @click="deleteItem">
-                        Удалить
+                        Usuń
                       </v-btn>
                     </div>
                   </v-card-title>
                   <v-card-text>
                     <v-alert v-if="!selectedItem" variant="tonal" type="info">
-                      Выберите элемент в дереве.
+                      Wybierz element w drzewie.
                     </v-alert>
                     <div v-else>
                       <div class="d-flex align-center gap-3 mb-4">
@@ -744,30 +744,30 @@ const saveSelectedContent = async () => {
                       </div>
 
                       <v-form @submit.prevent="updateItemMeta">
-                        <v-text-field v-model="itemEdit.title" label="Название" class="mb-3" />
+                        <v-text-field v-model="itemEdit.title" label="Nazwa" class="mb-3" />
                         <v-row>
                           <v-col cols="12" md="4">
-                            <v-text-field v-model.number="itemEdit.position" label="Позиция" type="number" class="mb-3" />
+                            <v-text-field v-model.number="itemEdit.position" label="Pozycja" type="number" class="mb-3" />
                           </v-col>
                           <v-col cols="12" md="8">
                             <v-select
                               v-model="itemEdit.parentId"
-                              :items="[{ id: null, title: '— без родителя —' }, ...items.filter((i) => i.id !== selectedItem.id)]"
+                              :items="[{ id: null, title: '— bez rodzica —' }, ...items.filter((i) => i.id !== selectedItem.id)]"
                               item-title="title"
                               item-value="id"
-                              label="Родитель"
+                              label="Rodzic"
                               class="mb-3"
                             />
                           </v-col>
                         </v-row>
-                        <v-switch v-model="itemEdit.isRequired" label="Обязательный" class="mb-4" />
+                        <v-switch v-model="itemEdit.isRequired" label="Wymagany" class="mb-4" />
 
                         <div class="d-flex flex-wrap gap-3">
                           <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save">
-                            Сохранить
+                            Zapisz
                           </v-btn>
                           <v-btn variant="tonal" prepend-icon="mdi-arrow-right" :disabled="!canGoContent" @click="step = 3">
-                            К контенту
+                            Do treści
                           </v-btn>
                         </div>
                       </v-form>
@@ -783,9 +783,9 @@ const saveSelectedContent = async () => {
               <v-col cols="12" lg="4">
                 <v-card>
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Навигация</span>
+                    <span>Nawigacja</span>
                     <v-btn size="small" variant="text" prepend-icon="mdi-refresh" @click="loadItems">
-                      Обновить
+                      Odśwież
                     </v-btn>
                   </v-card-title>
                   <v-card-text>
@@ -814,42 +814,42 @@ const saveSelectedContent = async () => {
               <v-col cols="12" lg="8">
                 <v-card>
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Редактор</span>
+                    <span>Edytor</span>
                     <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save" @click="saveSelectedContent">
-                      Сохранить контент
+                      Zapisz treść
                     </v-btn>
                   </v-card-title>
                   <v-card-text>
-                    <v-alert v-if="!selectedItem" variant="tonal" type="info">Выберите элемент слева.</v-alert>
+                    <v-alert v-if="!selectedItem" variant="tonal" type="info">Wybierz element po lewej.</v-alert>
 
                     <template v-else-if="selectedItem.type === 'CHAPTER'">
-                      <RichTextEditor v-model="chapterDelta" label="Контент раздела" placeholder="Введите текст..." />
+                      <RichTextEditor v-model="chapterDelta" label="Treść rozdziału" placeholder="Wpisz tekst..." />
                     </template>
 
                     <template v-else>
                       <v-row>
                         <v-col cols="12" md="6">
-                          <v-text-field v-model.number="assessmentForm.minPassScore" label="Минимальный балл" type="number" />
+                          <v-text-field v-model.number="assessmentForm.minPassScore" label="Minimalna liczba punktów" type="number" />
                         </v-col>
                         <v-col cols="12" md="6">
-                          <v-checkbox v-model="assessmentForm.shuffleQuestions" label="Перемешивать вопросы" />
+                          <v-checkbox v-model="assessmentForm.shuffleQuestions" label="Losuj kolejność pytań" />
                         </v-col>
                       </v-row>
                       <v-row>
                         <v-col cols="12" md="6">
-                          <v-text-field v-model.number="assessmentForm.attemptsLimit" label="Лимит попыток (0 = без лимита)" type="number" />
+                          <v-text-field v-model.number="assessmentForm.attemptsLimit" label="Limit prób (0 = bez limitu)" type="number" />
                         </v-col>
                         <v-col cols="12" md="6">
-                          <v-text-field v-model.number="assessmentForm.timeLimitSec" label="Лимит времени, сек (0 = без лимита)" type="number" />
+                          <v-text-field v-model.number="assessmentForm.timeLimitSec" label="Limit czasu, sek (0 = bez limitu)" type="number" />
                         </v-col>
                       </v-row>
 
                       <v-divider class="my-4" />
 
                       <div class="d-flex align-center justify-space-between mb-3">
-                        <div class="text-subtitle-1 font-weight-medium">Вопросы</div>
+                        <div class="text-subtitle-1 font-weight-medium">Pytania</div>
                         <v-btn size="small" variant="tonal" prepend-icon="mdi-plus" @click="addQuestion">
-                          Добавить вопрос
+                          Dodaj pytanie
                         </v-btn>
                       </div>
 
@@ -860,43 +860,43 @@ const saveSelectedContent = async () => {
                               <v-badge :content="qIdx + 1" color="primary" inline>
                                 <v-icon>mdi-comment-question-outline</v-icon>
                               </v-badge>
-                              <span class="text-subtitle-2">Вопрос</span>
+                              <span class="text-subtitle-2">Pytanie</span>
                             </div>
                             <v-btn icon size="small" variant="text" @click="removeQuestion(qIdx)" :disabled="questions.length === 1">
                               <v-icon>mdi-close</v-icon>
                             </v-btn>
                           </v-card-title>
                           <v-card-text>
-                            <v-text-field v-model="q.text" label="Текст вопроса" class="mb-3" />
+                            <v-text-field v-model="q.text" label="Treść pytania" class="mb-3" />
                             <v-row>
                               <v-col cols="12" md="5">
-                                <v-select v-model="q.type" :items="['SINGLE', 'MULTI', 'TEXT']" label="Тип" />
+                                <v-select v-model="q.type" :items="['SINGLE', 'MULTI', 'TEXT']" label="Typ" />
                               </v-col>
                               <v-col cols="12" md="4">
-                                <v-text-field v-model.number="q.points" type="number" label="Баллы" />
+                                <v-text-field v-model.number="q.points" type="number" label="Punkty" />
                               </v-col>
                               <v-col cols="12" md="3">
-                                <v-text-field v-model.number="q.position" type="number" label="Позиция" />
+                                <v-text-field v-model.number="q.position" type="number" label="Pozycja" />
                               </v-col>
                             </v-row>
 
                             <div v-if="q.type !== 'TEXT'">
                               <div class="d-flex align-center justify-space-between mt-2 mb-2">
-                                <div class="text-subtitle-2">Ответы</div>
+                                <div class="text-subtitle-2">Odpowiedzi</div>
                                 <v-btn size="small" variant="text" prepend-icon="mdi-plus" @click="addAnswer(qIdx)">
-                                  Добавить
+                                  Dodaj
                                 </v-btn>
                               </div>
                               <div v-for="(a, aIdx) in q.answers" :key="`a-${qIdx}-${aIdx}`" class="d-flex align-center gap-3 mb-2">
-                                <v-text-field v-model="a.text" :label="`Ответ ${aIdx + 1}`" class="flex-grow-1" />
-                                <v-checkbox v-model="a.isCorrect" label="Верный" hide-details />
+                                <v-text-field v-model="a.text" :label="`Odpowiedź ${aIdx + 1}`" class="flex-grow-1" />
+                                <v-checkbox v-model="a.isCorrect" label="Poprawna" hide-details />
                                 <v-btn icon size="small" variant="text" @click="removeAnswer(qIdx, aIdx)" :disabled="q.answers.length === 1">
                                   <v-icon>mdi-close</v-icon>
                                 </v-btn>
                               </div>
                             </div>
                             <v-alert v-else variant="tonal" type="info" class="mt-3">
-                              Для TEXT-вопроса ответы не создаются.
+                              Dla pytania typu TEXT odpowiedzi nie są tworzone.
                             </v-alert>
                           </v-card-text>
                         </v-card>
@@ -907,7 +907,7 @@ const saveSelectedContent = async () => {
 
                     <div class="d-flex flex-wrap gap-3">
                       <v-btn variant="tonal" prepend-icon="mdi-arrow-left" @click="step = 2">
-                        Назад к структуре
+                        Wróć do struktury
                       </v-btn>
                       <v-btn
                         color="primary"
@@ -916,7 +916,7 @@ const saveSelectedContent = async () => {
                         :disabled="!canGoPublish"
                         @click="step = 4"
                       >
-                        К публикации
+                        Do publikacji
                       </v-btn>
                     </div>
                   </v-card-text>
@@ -929,24 +929,24 @@ const saveSelectedContent = async () => {
             <v-row>
               <v-col cols="12" md="7">
                 <v-card>
-                  <v-card-title>Публикация</v-card-title>
+                  <v-card-title>Publikacja</v-card-title>
                   <v-card-text>
                     <v-alert variant="tonal" type="info" class="mb-4">
-                      Публикация меняет статус курса.
+                      Publikacja zmienia status kursu.
                     </v-alert>
                     <div class="d-flex flex-wrap gap-3">
                       <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save" @click="saveCourse">
-                        Сохранить настройки
+                        Zapisz ustawienia
                       </v-btn>
                       <v-btn variant="tonal" color="green" prepend-icon="mdi-publish" @click="courseForm.status = 'PUBLISHED'; saveCourse()">
-                        Опубликовать
+                        Opublikuj
                       </v-btn>
                       <v-btn variant="tonal" color="orange" prepend-icon="mdi-archive-outline" @click="courseForm.status = 'ARCHIVED'; saveCourse()">
-                        В архив
+                        Archiwizuj
                       </v-btn>
                       <v-spacer />
                       <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="step = 3">
-                        Назад к контенту
+                        Wróć do treści
                       </v-btn>
                     </div>
                   </v-card-text>
@@ -954,15 +954,15 @@ const saveSelectedContent = async () => {
               </v-col>
               <v-col cols="12" md="5">
                 <v-card variant="tonal">
-                  <v-card-title>Быстрый обзор</v-card-title>
+                  <v-card-title>Szybki podgląd</v-card-title>
                   <v-card-text>
                     <v-list density="compact">
                       <v-list-item>
-                        <v-list-item-title>Статус</v-list-item-title>
+                        <v-list-item-title>Status</v-list-item-title>
                         <v-list-item-subtitle>{{ statusLabel[courseForm.status] }}</v-list-item-subtitle>
                       </v-list-item>
                       <v-list-item>
-                        <v-list-item-title>Элементы</v-list-item-title>
+                        <v-list-item-title>Elementy</v-list-item-title>
                         <v-list-item-subtitle>{{ totalItems }}</v-list-item-subtitle>
                       </v-list-item>
                     </v-list>
@@ -977,28 +977,28 @@ const saveSelectedContent = async () => {
       <v-dialog v-model="addDialog" max-width="1200" width="100%" scrollable>
         <v-card>
           <v-card-title class="d-flex align-center justify-space-between">
-            <span>Добавить элемент</span>
+            <span>Dodaj element</span>
             <v-chip size="small" variant="tonal" :prepend-icon="typeIcon[addForm.type]">
               {{ typeLabel[addForm.type] }}
             </v-chip>
           </v-card-title>
           <v-card-text>
             <v-form @submit.prevent="createItem">
-              <v-select v-model="addForm.type" :items="['CHAPTER', 'QUIZ', 'EXAM']" label="Тип" class="mb-3" />
-              <v-text-field v-model="addForm.title" label="Название" class="mb-3" />
+              <v-select v-model="addForm.type" :items="['CHAPTER', 'QUIZ', 'EXAM']" label="Typ" class="mb-3" />
+              <v-text-field v-model="addForm.title" label="Nazwa" class="mb-3" />
               <v-select
                 v-model="addForm.parentId"
-                :items="[{ id: null, title: '— без родителя —' }, ...items.filter((i) => i.type === 'CHAPTER')]"
+                :items="[{ id: null, title: '— bez rodzica —' }, ...items.filter((i) => i.type === 'CHAPTER')]"
                 item-title="title"
                 item-value="id"
-                label="Родитель (только раздел)"
+                label="Rodzic (tylko rozdział)"
                 class="mb-3"
               />
-              <v-switch v-model="addForm.isRequired" label="Обязательный" class="mb-2" />
-              <div class="text-caption text-medium-emphasis mb-4">Позиция: #{{ nextPosition }}</div>
+              <v-switch v-model="addForm.isRequired" label="Wymagany" class="mb-2" />
+              <div class="text-caption text-medium-emphasis mb-4">Pozycja: #{{ nextPosition }}</div>
               <div class="d-flex gap-3">
-                <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-plus">Добавить</v-btn>
-                <v-btn variant="tonal" :disabled="saving" @click="addDialog = false">Отмена</v-btn>
+                <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-plus">Dodaj</v-btn>
+                <v-btn variant="tonal" :disabled="saving" @click="addDialog = false">Anuluj</v-btn>
               </div>
             </v-form>
           </v-card-text>

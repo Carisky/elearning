@@ -17,9 +17,9 @@ type Course = {
 }
 
 const statusLabel: Record<Course['status'], string> = {
-  DRAFT: 'Черновик',
-  PUBLISHED: 'Опубликован',
-  ARCHIVED: 'Архив',
+  DRAFT: 'Szkic',
+  PUBLISHED: 'Opublikowany',
+  ARCHIVED: 'Archiwum',
 }
 
 const statusColor: Record<Course['status'], string> = {
@@ -51,17 +51,17 @@ const hardRefresh = async () => {
       <v-container fluid>
         <v-row class="mb-4" align="center" justify="space-between">
           <v-col cols="12" md="7">
-            <div class="text-h5 font-weight-bold">Курсы</div>
+            <div class="text-h5 font-weight-bold">Kursy</div>
             <div class="text-body-2 text-medium-emphasis">
-              Создание курса, структура (разделы/подразделы), тесты и экзамены.
+              Tworzenie kursów, struktura (rozdziały/podrozdziały), testy i egzaminy.
             </div>
           </v-col>
           <v-col cols="12" md="5" class="d-flex justify-end gap-3 flex-wrap">
             <v-btn variant="tonal" :loading="refreshing" prepend-icon="mdi-refresh" @click="hardRefresh">
-              Обновить
+              Odśwież
             </v-btn>
             <v-btn color="primary" prepend-icon="mdi-plus" to="/admin/courses/new">
-              Новый курс
+              Nowy kurs
             </v-btn>
           </v-col>
         </v-row>
@@ -73,11 +73,11 @@ const hardRefresh = async () => {
             <v-table v-if="list.length" density="compact">
               <thead>
                 <tr>
-                  <th class="text-left">Курс</th>
-                  <th class="text-left">Категория</th>
-                  <th class="text-left">Статус</th>
-                  <th class="text-left">Цена</th>
-                  <th class="text-right">Действия</th>
+                  <th class="text-left">Kurs</th>
+                  <th class="text-left">Kategoria</th>
+                  <th class="text-left">Status</th>
+                  <th class="text-left">Cena</th>
+                  <th class="text-right">Akcje</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,7 +100,7 @@ const hardRefresh = async () => {
                       prepend-icon="mdi-wrench"
                       :to="`/admin/courses/${course.id}`"
                     >
-                      Открыть мастер
+                      Otwórz kreator
                     </v-btn>
                   </td>
                 </tr>
@@ -108,7 +108,7 @@ const hardRefresh = async () => {
             </v-table>
 
             <v-alert v-else variant="tonal" type="info">
-              Курсов пока нет. Создайте первый курс.
+              Brak kursów. Utwórz pierwszy kurs.
             </v-alert>
           </v-card-text>
         </v-card>
