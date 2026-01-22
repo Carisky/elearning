@@ -158,6 +158,52 @@ const defaultAboutUsContent = {
   },
 } as const
 
+const defaultContactUsContent = {
+  seo: {
+    title: 'Contact — E‑Learning',
+    description: 'Get in touch: support, partnerships, and general questions.',
+  },
+  hero: {
+    eyebrow: 'Contact',
+    title: 'Let’s talk',
+    subtitle:
+      'Send a message, ask a question, or propose a partnership. We usually respond within 1–2 business days.',
+    imageUrl: '/placeholders/contact-hero.svg',
+    imageAlt: 'Abstract contact illustration',
+  },
+  cards: [
+    {
+      icon: 'mdi-email-outline',
+      title: 'Email',
+      lines: ['hello@example.com', 'support@example.com'],
+    },
+    {
+      icon: 'mdi-phone-outline',
+      title: 'Phone',
+      lines: ['+48 000 000 000', 'Mon–Fri, 10:00–18:00'],
+    },
+    {
+      icon: 'mdi-map-marker-outline',
+      title: 'Office',
+      lines: ['Warsaw, PL', 'Business Center — Floor 4'],
+    },
+  ],
+  form: {
+    title: 'Send us a message',
+    subtitle: 'We’ll get back to you as soon as we can.',
+    recipientEmail: 'hello@example.com',
+    subjectPrefix: '[E‑Learning] ',
+  },
+  faq: {
+    title: 'Quick answers',
+    items: [
+      { q: 'Is this page editable?', a: 'Yes — update it in Admin → Kontakt.' },
+      { q: 'Do you offer demos?', a: 'Yes — send a message and we will schedule a call.' },
+      { q: 'Support hours?', a: 'Mon–Fri, 10:00–18:00 (CET).' },
+    ],
+  },
+} as const
+
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
@@ -172,7 +218,14 @@ export default defineEventHandler(async (event) => {
   if (!page) {
     return {
       slug,
-      content: slug === 'home' ? defaultHomeContent : slug === 'about-us' ? defaultAboutUsContent : null,
+      content:
+        slug === 'home'
+          ? defaultHomeContent
+          : slug === 'about-us'
+            ? defaultAboutUsContent
+            : slug === 'contact-us'
+              ? defaultContactUsContent
+              : null,
     }
   }
 

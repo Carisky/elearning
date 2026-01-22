@@ -27,6 +27,12 @@ const sections = [
     helper: 'Treść strony O nas',
     path: '/admin/about-us',
   },
+  {
+    id: 'contact-us',
+    label: 'Kontakt',
+    helper: 'Treść strony Kontakt',
+    path: '/admin/contact-us',
+  },
 ] as const
 
 const route = useRoute()
