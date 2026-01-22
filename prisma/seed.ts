@@ -86,6 +86,138 @@ const DEFAULT_HOME_PAGE_CONTENT = {
   ],
 } as const
 
+const DEFAULT_ABOUT_US_PAGE_CONTENT = {
+  seo: {
+    title: 'About us — E‑Learning',
+    description: 'Who we are, what we build, and how we help learners grow.',
+  },
+  hero: {
+    eyebrow: 'About the platform',
+    title: 'We help teams learn faster',
+    subtitle:
+      'A modern learning platform for courses, assessments, progress tracking and monetization — built to be simple for creators and delightful for students.',
+    imageUrl: '/placeholders/about-hero.svg',
+    imageAlt: 'Abstract team illustration',
+  },
+  stats: [
+    { value: '4.9/5', label: 'Average rating' },
+    { value: '24/7', label: 'Self‑paced learning' },
+    { value: '100%', label: 'Progress visibility' },
+  ],
+  sections: [
+    {
+      title: 'Our mission',
+      body: {
+        ops: [
+          {
+            insert:
+              'Make learning practical, measurable and accessible.\n\nWe believe knowledge sticks when it is structured into short lessons, reinforced with quizzes, and supported by clear progress.\n',
+          },
+        ],
+      },
+      align: 'left',
+    },
+    {
+      title: 'What we value',
+      body: {
+        ops: [
+          {
+            insert:
+              'Clarity over complexity.\nQuality over quantity.\nIteration over perfection.\n\nWe ship improvements continuously and keep the platform easy to use.\n',
+          },
+        ],
+      },
+      align: 'right',
+    },
+  ],
+  values: [
+    {
+      icon: 'mdi-compass-outline',
+      title: 'Clear learning paths',
+      description: 'Courses are structured, progress is visible, and next steps are obvious.',
+    },
+    {
+      icon: 'mdi-check-decagram-outline',
+      title: 'Built‑in assessment',
+      description: 'Quizzes and exams make learning measurable and actionable.',
+    },
+    {
+      icon: 'mdi-speedometer',
+      title: 'Fast and focused',
+      description: 'Short lessons, quick feedback, and a clean interface keep learners engaged.',
+    },
+  ],
+  team: {
+    title: 'Small team, big focus',
+    subtitle: 'We are builders who care about learning outcomes.',
+    members: [
+      { name: 'Alex', role: 'Product', bio: 'Turns ideas into simple flows and sharp UX.' },
+      { name: 'Sam', role: 'Engineering', bio: 'Builds reliable systems and fast pages.' },
+      { name: 'Taylor', role: 'Content', bio: 'Crafts lessons that are clear, useful, and testable.' },
+    ],
+  },
+  faq: {
+    title: 'FAQ',
+    items: [
+      { q: 'Can I edit this page from the admin panel?', a: 'Yes — this page content is editable in Admin → About us.' },
+      { q: 'Do you support rich text?', a: 'Yes — the long sections use a rich text editor.' },
+      { q: 'Where is this stored?', a: 'In the database as a SitePage record with slug "about-us".' },
+    ],
+  },
+  cta: {
+    title: 'Ready to learn?',
+    subtitle: 'Explore courses and start your journey today.',
+    primaryCta: { label: 'Browse courses', href: '/courses' },
+    secondaryCta: { label: 'Contact us', href: '/contact-us' },
+  },
+} as const
+
+const DEFAULT_CONTACT_US_PAGE_CONTENT = {
+  seo: {
+    title: 'Contact — E‑Learning',
+    description: 'Get in touch: support, partnerships, and general questions.',
+  },
+  hero: {
+    eyebrow: 'Contact',
+    title: 'Let’s talk',
+    subtitle:
+      'Send a message, ask a question, or propose a partnership. We usually respond within 1–2 business days.',
+    imageUrl: '/placeholders/contact-hero.svg',
+    imageAlt: 'Abstract contact illustration',
+  },
+  cards: [
+    {
+      icon: 'mdi-email-outline',
+      title: 'Email',
+      lines: ['hello@example.com', 'support@example.com'],
+    },
+    {
+      icon: 'mdi-phone-outline',
+      title: 'Phone',
+      lines: ['+48 000 000 000', 'Mon–Fri, 10:00–18:00'],
+    },
+    {
+      icon: 'mdi-map-marker-outline',
+      title: 'Office',
+      lines: ['Warsaw, PL', 'Business Center — Floor 4'],
+    },
+  ],
+  form: {
+    title: 'Send us a message',
+    subtitle: 'We’ll get back to you as soon as we can.',
+    recipientEmail: 'hello@example.com',
+    subjectPrefix: '[E‑Learning] ',
+  },
+  faq: {
+    title: 'Quick answers',
+    items: [
+      { q: 'Is this page editable?', a: 'Yes — update it in Admin → Kontakt.' },
+      { q: 'Do you offer demos?', a: 'Yes — send a message and we will schedule a call.' },
+      { q: 'Support hours?', a: 'Mon–Fri, 10:00–18:00 (CET).' },
+    ],
+  },
+} as const
+
 const upsertCategory = async (prisma: PrismaClient, input: { slug: string; title: string; sortOrder?: number }) => {
   return prisma.category.upsert({
     where: { slug: input.slug },
@@ -131,7 +263,21 @@ async function main() {
     select: { id: true },
   })
 
- 
+  await prisma.sitePage.upsert({
+    where: { slug: 'about-us' },
+    update: { content: DEFAULT_ABOUT_US_PAGE_CONTENT },
+    create: { slug: 'about-us', content: DEFAULT_ABOUT_US_PAGE_CONTENT },
+    select: { id: true },
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'contact-us' },
+    update: { content: DEFAULT_CONTACT_US_PAGE_CONTENT },
+    create: { slug: 'contact-us', content: DEFAULT_CONTACT_US_PAGE_CONTENT },
+    select: { id: true },
+  })
+
+  
 }
 
 main()
