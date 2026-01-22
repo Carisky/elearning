@@ -14,7 +14,7 @@
         Panel Administratora
       </v-toolbar-title>
 
-      <NuxtLink v-else class="nav-link ml-8" to="/"> <v-container>E-Learning</v-container> </NuxtLink>
+      <NuxtLink v-else class="nav-brand ml-8" to="/"> <v-container>E-Learning</v-container> </NuxtLink>
       <v-spacer />
 
       <div class="d-none d-md-flex align-center">
@@ -450,10 +450,39 @@ watch(
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   opacity: 0.9;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  position: relative;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .nav-link:hover {
+  opacity: 1;
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.nav-link.router-link-active,
+.nav-link.router-link-exact-active {
+  background: rgba(var(--v-theme-primary), 0.14);
+  color: rgb(var(--v-theme-primary));
+  opacity: 1;
+}
+
+.nav-brand {
+  color: rgb(var(--v-theme-on-background));
   text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.95;
+}
+
+.nav-brand:hover {
   opacity: 1;
 }
 
