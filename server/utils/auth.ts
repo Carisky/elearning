@@ -1,17 +1,64 @@
 import jwt from 'jsonwebtoken'
-import { setCookie, getCookie, createError } from 'h3'
+import { setCookie, getCookie, createError, getHeader } from 'h3'
 import type { H3Event } from 'h3'
 import { prisma } from './db'
 import type { User, UserRole } from '../../prisma/generated/client'
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret'
 const COOKIE_NAME = 'auth'
-const COOKIE_OPTIONS = {
+
+const cookieBaseOptions = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
   maxAge: 60 * 60 * 24 * 30,
 }
+
+const parseForwardedProto = (value: string): string | null => {
+  // Forwarded: for=...;proto=https;host=...
+  const match = value.match(/(?:^|;)\s*proto=([^;]+)/i)
+  return match?.[1]?.trim()?.toLowerCase() ?? null
+}
+
+const isRequestSecure = (event: H3Event): boolean => {
+  const forwardedProto = getHeader(event, 'x-forwarded-proto')
+  if (typeof forwardedProto === 'string') {
+    const proto = forwardedProto.split(',')[0]?.trim()?.toLowerCase()
+    if (proto) return proto === 'https'
+  }
+
+  const forwardedSsl = getHeader(event, 'x-forwarded-ssl')
+  if (typeof forwardedSsl === 'string' && forwardedSsl.trim().toLowerCase() === 'on') return true
+
+  const forwarded = getHeader(event, 'forwarded')
+  if (typeof forwarded === 'string') {
+    const proto = parseForwardedProto(forwarded)
+    if (proto) return proto === 'https'
+  }
+
+  const cfVisitor = getHeader(event, 'cf-visitor')
+  if (typeof cfVisitor === 'string') {
+    try {
+      const parsed = JSON.parse(cfVisitor)
+      if (parsed?.scheme === 'https') return true
+    } catch {
+      // ignore
+    }
+  }
+
+  return Boolean((event.node.req.socket as any)?.encrypted)
+}
+
+const shouldUseSecureCookie = (event: H3Event): boolean => {
+  const override = process.env.COOKIE_SECURE
+  if (override) return override === 'true' || override === '1'
+  if (process.env.NODE_ENV !== 'production') return false
+  return isRequestSecure(event)
+}
+
+const cookieOptions = (event: H3Event) => ({
+  ...cookieBaseOptions,
+  secure: shouldUseSecureCookie(event),
+})
 
 type AuthPayload = {
   userId: number
@@ -28,11 +75,11 @@ export const signToken = (user: Pick<User, 'id' | 'email' | 'role'>) => {
 }
 
 export const setAuthToken = (event: H3Event, token: string) => {
-  setCookie(event, COOKIE_NAME, token, COOKIE_OPTIONS)
+  setCookie(event, COOKIE_NAME, token, cookieOptions(event))
 }
 
 export const clearAuthToken = (event: H3Event) => {
-  setCookie(event, COOKIE_NAME, '', { ...COOKIE_OPTIONS, maxAge: 0 })
+  setCookie(event, COOKIE_NAME, '', { ...cookieOptions(event), maxAge: 0 })
 }
 
 export const getTokenFromEvent = (event: H3Event): string | undefined =>
