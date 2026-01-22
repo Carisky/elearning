@@ -3,6 +3,8 @@ definePageMeta({ middleware: 'admin' })
 
 import { computed, ref } from 'vue'
 import AdminShell from '~/components/admin-shell.vue'
+import { formatMoneyByView } from '~/utils/currency'
+import type { SupportedCurrencyCode } from '~/utils/currency'
 
 type Course = {
   id: number
@@ -10,7 +12,7 @@ type Course = {
   slug: string
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
   priceCents: number
-  currency: string
+  currency: SupportedCurrencyCode
   category?: { id: number; title: string } | null
 }
 
@@ -90,7 +92,7 @@ const hardRefresh = async () => {
                       {{ statusLabel[course.status] }}
                     </v-chip>
                   </td>
-                  <td>{{ (course.priceCents / 100).toFixed(2) }} {{ course.currency }}</td>
+                  <td>{{ formatMoneyByView(course.priceCents, course.currency) }}</td>
                   <td class="text-right">
                     <v-btn
                       size="small"
@@ -114,4 +116,3 @@ const hardRefresh = async () => {
     </section>
   </AdminShell>
 </template>
-

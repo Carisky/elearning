@@ -1,6 +1,7 @@
 import { readBody, createError } from 'h3'
 import { prisma } from '../utils/db'
 import { requireAdmin } from '../utils/auth'
+import { isSupportedCurrencyCode, normalizeCurrencyCode } from '~/utils/currency'
 
 const createSlug = (value: string) => {
   return value
@@ -44,7 +45,11 @@ export default defineEventHandler(async (event) => {
     ? Math.max(0, Math.round(priceCandidate * 100))
     : 0
 
-  const currency = (body.currency ?? 'PLN').toUpperCase()
+  const normalizedCurrency = normalizeCurrencyCode(body.currency) ?? 'PLN'
+  if (!isSupportedCurrencyCode(normalizedCurrency)) {
+    throw createError({ statusCode: 400, statusMessage: 'Unsupported currency' })
+  }
+  const currency = normalizedCurrency
   const status = body.status ?? 'DRAFT'
 
   const baseSlug = slug

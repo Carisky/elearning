@@ -1,6 +1,7 @@
 import { readBody, createError } from 'h3'
 import { prisma } from '../../utils/db'
 import { requireAdmin } from '../../utils/auth'
+import { isSupportedCurrencyCode, normalizeCurrencyCode } from '~/utils/currency'
 
 const createSlug = (value: string) => {
   return value
@@ -54,7 +55,11 @@ export default defineEventHandler(async (event) => {
       ? Math.max(0, Math.round(priceCandidate * 100))
       : 0
   }
-  if (body.currency?.trim()) updateData.currency = body.currency.trim().toUpperCase()
+  if (body.currency !== undefined) {
+    const normalizedCurrency = normalizeCurrencyCode(body.currency)
+    if (normalizedCurrency && isSupportedCurrencyCode(normalizedCurrency)) updateData.currency = normalizedCurrency
+    else if (body.currency?.trim()) throw createError({ statusCode: 400, statusMessage: 'Unsupported currency' })
+  }
   if (body.status) updateData.status = body.status
 
   if (!Object.keys(updateData).length) {

@@ -1,6 +1,8 @@
 ﻿<script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import RichTextEditor from '~/components/rich-text-editor.vue'
+import type { SupportedCurrencyCode } from '~/utils/currency'
+import { currencyOptions, isSupportedCurrencyCode } from '~/utils/currency'
 
 defineOptions({ name: 'CourseWizard' })
 
@@ -16,7 +18,7 @@ type Course = {
   slug: string
   status: CourseStatus
   priceCents: number
-  currency: string
+  currency: SupportedCurrencyCode
   categoryId: number
 }
 
@@ -100,7 +102,7 @@ const courseForm = reactive({
   slug: '',
   categoryId: null as number | null,
   price: '0.00',
-  currency: 'PLN',
+  currency: 'PLN' as SupportedCurrencyCode,
   status: 'DRAFT' as CourseStatus,
 })
 
@@ -126,7 +128,7 @@ const loadCourse = async () => {
     courseForm.slug = data.slug ?? ''
     courseForm.categoryId = data.categoryId ?? null
     courseForm.price = (data.priceCents / 100).toFixed(2)
-    courseForm.currency = data.currency ?? 'PLN'
+    courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
     courseForm.status = data.status ?? 'DRAFT'
   } catch (e: any) {
     notification.value = { type: 'error', message: errorMessage(e, 'Не удалось загрузить курс') }
@@ -624,7 +626,14 @@ const saveSelectedContent = async () => {
                           <v-text-field v-model="courseForm.price" label="Цена" type="number" class="mb-3" />
                         </v-col>
                         <v-col cols="12" md="5">
-                          <v-text-field v-model="courseForm.currency" label="Валюта" class="mb-3" />
+                          <v-select
+                            v-model="courseForm.currency"
+                            :items="currencyOptions"
+                            item-title="view"
+                            item-value="code"
+                            label="Валюта"
+                            class="mb-3"
+                          />
                         </v-col>
                       </v-row>
 
