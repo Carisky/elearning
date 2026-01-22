@@ -127,6 +127,7 @@ const { data: page } = await useFetch<SitePageResponse>(
   },
 );
 const content = computed(() => page.value?.content ?? createFallback());
+const primaryBanner = computed(() => content.value.banners[0] ?? null);
 
 useSeoMeta({
   title: computed(() => content.value.seo.title),
@@ -370,25 +371,25 @@ const year = new Date().getFullYear();
       </v-container>
     </section>
 
-    <section class="landing-banner" v-if="content.banners?.length">
+    <section class="landing-banner" v-if="primaryBanner">
       <v-container class="py-4 py-md-10">
         <v-card
           class="landing-banner__card"
           rounded="xl"
           elevation="0"
-          :to="content.banners[0].href"
+          :to="primaryBanner.href"
         >
           <v-row class="ma-0">
             <v-col cols="12" md="7" class="pa-8">
               <div class="text-overline text-primary">New</div>
               <div class="text-h4 font-weight-bold mt-1">
-                {{ content.banners[0].title }}
+                {{ primaryBanner.title }}
               </div>
               <div
-                v-if="content.banners[0].subtitle"
+                v-if="primaryBanner.subtitle"
                 class="text-body-1 text-medium-emphasis mt-3"
               >
-                {{ content.banners[0].subtitle }}
+                {{ primaryBanner.subtitle }}
               </div>
               <v-btn color="primary" variant="flat" rounded="lg" class="mt-6"
                 >Sprawdź</v-btn
@@ -396,7 +397,7 @@ const year = new Date().getFullYear();
             </v-col>
             <v-col cols="12" md="5" class="pa-0">
               <v-img
-                :src="content.banners[0].imageUrl"
+                :src="primaryBanner.imageUrl"
                 cover
                 height="100%"
                 class="landing-banner__img"

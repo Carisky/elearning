@@ -331,6 +331,13 @@ const itemEdit = reactive({
   isRequired: true,
 })
 
+const parentSelectItems = computed(() => {
+  const rootOption = { id: null as number | null, title: '— bez rodzica —' }
+  const current = selectedItem.value
+  if (!current) return [rootOption]
+  return [rootOption, ...items.value.filter((i) => i.id !== current.id)]
+})
+
 watch(
   selectedItem,
   (item) => {
@@ -727,10 +734,7 @@ const saveSelectedContent = async () => {
                     </div>
                   </v-card-title>
                   <v-card-text>
-                    <v-alert v-if="!selectedItem" variant="tonal" type="info">
-                      Wybierz element w drzewie.
-                    </v-alert>
-                    <div v-else>
+                    <template v-if="selectedItem">
                       <div class="d-flex align-center gap-3 mb-4">
                         <v-icon>{{ typeIcon[selectedItem.type] }}</v-icon>
                         <div>
@@ -752,7 +756,7 @@ const saveSelectedContent = async () => {
                           <v-col cols="12" md="8">
                             <v-select
                               v-model="itemEdit.parentId"
-                              :items="[{ id: null, title: '— bez rodzica —' }, ...items.filter((i) => i.id !== selectedItem.id)]"
+                              :items="parentSelectItems"
                               item-title="title"
                               item-value="id"
                               label="Rodzic"
@@ -771,7 +775,10 @@ const saveSelectedContent = async () => {
                           </v-btn>
                         </div>
                       </v-form>
-                    </div>
+                    </template>
+                    <v-alert v-else variant="tonal" type="info">
+                      Wybierz element w drzewie.
+                    </v-alert>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -822,7 +829,7 @@ const saveSelectedContent = async () => {
                   <v-card-text>
                     <v-alert v-if="!selectedItem" variant="tonal" type="info">Wybierz element po lewej.</v-alert>
 
-                    <template v-else-if="selectedItem.type === 'CHAPTER'">
+                    <template v-else-if="selectedItem?.type === 'CHAPTER'">
                       <RichTextEditor v-model="chapterDelta" label="Treść rozdziału" placeholder="Wpisz tekst..." />
                     </template>
 
