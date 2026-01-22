@@ -36,16 +36,17 @@ const content = computed(() => toDeltaInstance(props.modelValue))
 
 <template>
   <ClientOnly>
-    <component
-      :is="QuillEditor"
-      v-if="QuillEditor"
-      :content="content"
-      content-type="delta"
-      theme="snow"
-      read-only
-      :toolbar="false"
-      class="rtv"
-    />
+    <div class="rtv">
+      <component
+        :is="QuillEditor"
+        v-if="QuillEditor"
+        :content="content"
+        content-type="delta"
+        theme="snow"
+        read-only
+        toolbar=""
+      />
+    </div>
     <template #fallback>
       <div class="rtv-fallback" />
     </template>

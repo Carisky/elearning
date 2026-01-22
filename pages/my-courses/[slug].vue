@@ -25,14 +25,21 @@
 
           <v-list v-else density="compact" class="py-0">
             <v-list-item
-              v-for="item in payload?.items ?? []"
+              v-for="item in orderedItems"
               :key="item.id"
               :active="item.id === selectedItemId"
+              :disabled="!isUnlocked(item.id)"
               @click="selectItem(item.id)"
             >
               <template #prepend>
-                <v-icon :color="isCompleted(item.id) ? 'green' : undefined">
-                  {{ isCompleted(item.id) ? 'mdi-check-circle' : itemIcon(item.type) }}
+                <v-icon :color="isCompleted(item.id) ? 'green' : !isUnlocked(item.id) ? 'grey' : undefined">
+                  {{
+                    isCompleted(item.id)
+                      ? 'mdi-check-circle'
+                      : !isUnlocked(item.id)
+                        ? 'mdi-lock-outline'
+                        : itemIcon(item.type)
+                  }}
                 </v-icon>
               </template>
 
@@ -245,8 +252,26 @@ const { data: payload, pending, error, refresh } = await useFetch<MyCoursePayloa
 const selectedItemId = ref<number | null>(null)
 const completedSet = computed(() => new Set(payload.value?.completedItemIds ?? []))
 
-const currentItem = computed(() => {
+const orderedItems = computed(() => {
   const items = payload.value?.items ?? []
+  return [...items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+})
+
+const isUnlocked = (courseItemId: number) => {
+  if (isReadOnly.value) return true
+  if (completedSet.value.has(courseItemId)) return true
+
+  const items = orderedItems.value
+  const idx = items.findIndex((i) => i.id === courseItemId)
+  if (idx <= 0) return true
+  for (let i = 0; i < idx; i++) {
+    if (!completedSet.value.has(items[i]!.id)) return false
+  }
+  return true
+}
+
+const currentItem = computed(() => {
+  const items = orderedItems.value
   if (!items.length) return null
   const id = selectedItemId.value ?? items[0]?.id ?? null
   return items.find((i) => i.id === id) ?? items[0] ?? null
@@ -283,7 +308,7 @@ const isEndOfCourse = computed(() => {
 })
 
 watch(
-  () => payload.value?.items?.[0]?.id ?? null,
+  () => orderedItems.value[0]?.id ?? null,
   (firstId) => {
     if (!selectedItemId.value && firstId) selectedItemId.value = firstId
   },
@@ -303,6 +328,7 @@ const latestAttempt = (courseItemId: number) => {
 }
 
 const selectItem = (id: number) => {
+  if (!isUnlocked(id)) return
   selectedItemId.value = id
   resetAssessment()
 }
@@ -340,7 +366,7 @@ const completeItem = async (courseItemId: number) => {
 }
 
 const goNext = () => {
-  const items = payload.value?.items ?? []
+  const items = orderedItems.value
   const current = currentItem.value
   if (!current) return
   const idx = items.findIndex((i) => i.id === current.id)
