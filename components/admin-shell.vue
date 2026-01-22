@@ -118,7 +118,11 @@ const activeSection = computed(() =>
 }
 
 .admin-shell__content {
-  margin-left: 260px;
-  width: calc(100% - 260px);
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-shell__content :deep(.v-container) {
+  max-width: none !important;
 }
 </style>
