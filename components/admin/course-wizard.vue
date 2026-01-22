@@ -447,11 +447,47 @@ const deleteItem = async () => {
   }
 }
 
+const blocksToDelta = (blocks: any[]): any => {
+  const ops: any[] = []
+  for (const b of blocks ?? []) {
+    if (!b || typeof b !== 'object') continue
+    if (b.type === 'h1' || b.type === 'h2' || b.type === 'h3') {
+      const level = b.type === 'h1' ? 1 : b.type === 'h2' ? 2 : 3
+      const text = typeof b.text === 'string' ? b.text : ''
+      if (text) ops.push({ insert: text })
+      ops.push({ insert: '\n', attributes: { header: level } })
+      continue
+    }
+    if (b.type === 'p') {
+      const text = typeof b.text === 'string' ? b.text : ''
+      if (text) ops.push({ insert: text })
+      ops.push({ insert: '\n' })
+      continue
+    }
+    if (b.type === 'ul' && Array.isArray(b.items)) {
+      for (const it of b.items) {
+        const text = typeof it === 'string' ? it : ''
+        if (text) ops.push({ insert: text })
+        ops.push({ insert: '\n', attributes: { list: 'bullet' } })
+      }
+      continue
+    }
+    if (typeof b.text === 'string' && b.text.trim()) {
+      ops.push({ insert: b.text })
+      ops.push({ insert: '\n' })
+    }
+  }
+  return { ops }
+}
+
 const toDelta = (contentJson: any): any => {
   if (!contentJson) return null
   if (typeof contentJson === 'object' && Array.isArray(contentJson.ops)) return contentJson
   if (typeof contentJson === 'object' && typeof contentJson.body === 'string') {
     return { ops: [{ insert: `${contentJson.body}\n` }] }
+  }
+  if (typeof contentJson === 'object' && Array.isArray(contentJson.blocks)) {
+    return blocksToDelta(contentJson.blocks)
   }
   return null
 }
@@ -477,7 +513,7 @@ const createQuestion = (position = 0): QuestionForm => ({
 watch(
   selectedItem,
   (item) => {
-    chapterDelta.value = item?.type === 'CHAPTER' ? toDelta(item.chapter?.contentJson) : null
+    chapterDelta.value = item?.type === 'CHAPTER' ? (toDelta(item.chapter?.contentJson) ?? { ops: [] }) : null
 
     if (item?.type === 'QUIZ' || item?.type === 'EXAM') {
       const a = item.assessment
@@ -942,7 +978,12 @@ const saveSelectedContent = async () => {
                     <v-alert v-if="!selectedItem" variant="tonal" type="info">Wybierz element po lewej.</v-alert>
 
                     <template v-else-if="selectedItem?.type === 'CHAPTER'">
-                      <RichTextEditor v-model="chapterDelta" label="Treść rozdziału" placeholder="Wpisz tekst..." />
+                      <RichTextEditor
+                        :key="selectedItemId ?? 'chapter'"
+                        v-model="chapterDelta"
+                        label="Treść rozdziału"
+                        placeholder="Wpisz tekst..."
+                      />
                     </template>
 
                     <template v-else>
