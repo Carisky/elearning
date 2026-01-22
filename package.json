@@ -11,7 +11,12 @@
     "docker:up": "docker compose up -d",
     "prisma:studio": "npx prisma studio --config ./prisma.config.ts",
     "full": "concurrently \"npm run docker:up\" \"npm run dev\" \"npm run prisma:studio\"",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "server:start": "bash scripts/server.sh start",
+    "server:stop": "bash scripts/server.sh stop",
+    "server:restart": "bash scripts/server.sh restart",
+    "server:rebuild": "bash scripts/server.sh rebuild",
+    "server:status": "bash scripts/server.sh status"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
