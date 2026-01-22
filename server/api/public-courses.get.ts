@@ -1,4 +1,5 @@
 import { prisma } from '../utils/db'
+import { deltaToPlainText } from '../utils/rich-text'
 
 export default defineEventHandler(async () => {
   const courses = await prisma.course.findMany({
@@ -20,7 +21,8 @@ export default defineEventHandler(async () => {
     slug: course.slug,
     priceCents: course.priceCents,
     currency: course.currency,
+    previewImageUrl: course.previewImageUrl,
+    descriptionText: deltaToPlainText(course.descriptionJson).slice(0, 220),
     category: course.category,
   }))
 })
-

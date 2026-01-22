@@ -114,6 +114,8 @@ type PublicCourse = {
   slug: string;
   priceCents: number;
   currency: string;
+  previewImageUrl?: string | null;
+  descriptionText?: string | null;
   category?: { id: number; title: string } | null;
 };
 
@@ -330,6 +332,11 @@ const year = new Date().getFullYear();
                 md="4"
               >
                 <v-card class="landing-course h-100" rounded="xl" elevation="0">
+                  <v-img
+                    :src="course.previewImageUrl || '/placeholders/banner-1.svg'"
+                    cover
+                    aspect-ratio="16/9"
+                  />
                   <v-card-text class="pa-6 d-flex flex-column h-100">
                     <div>
                       <div class="text-h6 font-weight-bold">
@@ -338,6 +345,13 @@ const year = new Date().getFullYear();
 
                       <div class="text-body-2 text-medium-emphasis mt-1">
                         {{ course.category?.title ?? "Bez kategorii" }}
+                      </div>
+
+                      <div
+                        v-if="course.descriptionText"
+                        class="text-body-2 text-medium-emphasis mt-3"
+                      >
+                        {{ course.descriptionText }}
                       </div>
                     </div>
 
@@ -348,19 +362,24 @@ const year = new Date().getFullYear();
                         {{ formatMoney(course.priceCents, course.currency) }}
                       </div>
 
-                      <v-btn
-                        color="primary"
-                        variant="flat"
-                        rounded="lg"
-                        :disabled="cart.courseIds.value.includes(course.id)"
-                        @click="addToCart(course.id)"
-                      >
-                        {{
-                          cart.courseIds.value.includes(course.id)
-                            ? "W koszyku"
-                            : "Dodaj"
-                        }}
-                      </v-btn>
+                      <div class="d-flex ga-2">
+                        <v-btn variant="text" rounded="lg" :to="`/courses/${course.slug}`">
+                          Szczegóły
+                        </v-btn>
+                        <v-btn
+                          color="primary"
+                          variant="flat"
+                          rounded="lg"
+                          :disabled="cart.courseIds.value.includes(course.id)"
+                          @click="addToCart(course.id)"
+                        >
+                          {{
+                            cart.courseIds.value.includes(course.id)
+                              ? "W koszyku"
+                              : "Dodaj"
+                          }}
+                        </v-btn>
+                      </div>
                     </div>
                   </v-card-text>
                 </v-card>

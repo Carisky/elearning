@@ -31,6 +31,8 @@ export default defineEventHandler(async (event) => {
     price?: number | string
     currency?: string
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+    previewImageUrl?: string | null
+    descriptionJson?: any | null
   }>(event)
 
   if (!body.title || !body.categoryId) {
@@ -51,6 +53,12 @@ export default defineEventHandler(async (event) => {
   }
   const currency = normalizedCurrency
   const status = body.status ?? 'DRAFT'
+  const previewImageUrl = typeof body.previewImageUrl === 'string' && body.previewImageUrl.trim()
+    ? body.previewImageUrl.trim()
+    : null
+  const descriptionJson = body.descriptionJson && typeof body.descriptionJson === 'object' && Array.isArray(body.descriptionJson.ops)
+    ? { ops: body.descriptionJson.ops }
+    : null
 
   const baseSlug = slug
   let course:
@@ -77,6 +85,8 @@ export default defineEventHandler(async (event) => {
           priceCents,
           currency,
           status,
+          previewImageUrl,
+          descriptionJson,
           createdById: admin.id,
         },
       })

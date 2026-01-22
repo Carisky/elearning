@@ -85,6 +85,8 @@ model Course {
   priceCents Int          @default(0)
   currency   String       @default("PLN")
   status     CourseStatus @default(DRAFT)
+  previewImageUrl String?
+  descriptionJson  Json?
 
   createdById Int
   createdAt   DateTime @default(now())

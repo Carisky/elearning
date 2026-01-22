@@ -20,6 +20,8 @@ type Course = {
   priceCents: number
   currency: SupportedCurrencyCode
   categoryId: number
+  previewImageUrl?: string | null
+  descriptionJson?: any | null
 }
 
 type CourseItem = {
@@ -104,7 +106,53 @@ const courseForm = reactive({
   price: '0.00',
   currency: 'PLN' as SupportedCurrencyCode,
   status: 'DRAFT' as CourseStatus,
+  previewImageUrl: '',
 })
+
+const courseDescriptionDelta = ref<any | null>(null)
+const previewFile = ref<any>(null)
+const previewUploading = ref(false)
+
+const toDeltaCourse = (contentJson: any): any => {
+  if (!contentJson) return null
+  if (typeof contentJson === 'object' && Array.isArray(contentJson.ops)) return contentJson
+  if (typeof contentJson === 'object' && typeof contentJson.body === 'string') {
+    return { ops: [{ insert: `${contentJson.body}\n` }] }
+  }
+  return null
+}
+
+const firstFile = (value: any): File | null => {
+  if (!value) return null
+  if (Array.isArray(value)) return (value[0] as File) ?? null
+  return value as File
+}
+
+const uploadPreview = async (file: File | null) => {
+  previewFile.value = file
+  if (!file) return
+  if (!internalCourseId.value) {
+    notification.value = { type: 'info', message: 'Najpierw utwórz kurs, potem dodaj obrazek.' }
+    previewFile.value = null
+    return
+  }
+
+  previewUploading.value = true
+  notification.value = null
+  try {
+    const form = new FormData()
+    form.append('courseId', String(internalCourseId.value))
+    form.append('file', file)
+    const res = await $fetch<{ url: string }>('/api/uploads/course-preview', { method: 'POST', body: form })
+    courseForm.previewImageUrl = res.url
+    previewFile.value = null
+    notification.value = { type: 'success', message: 'Obrazek został wgrany. Zapisz kurs, aby utrwalić zmianę.' }
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się wgrać obrazka') }
+  } finally {
+    previewUploading.value = false
+  }
+}
 
 watch(
   categoryList,
@@ -130,6 +178,8 @@ const loadCourse = async () => {
     courseForm.price = (data.priceCents / 100).toFixed(2)
     courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
     courseForm.status = data.status ?? 'DRAFT'
+    courseForm.previewImageUrl = data.previewImageUrl ?? ''
+    courseDescriptionDelta.value = toDeltaCourse(data.descriptionJson)
   } catch (e: any) {
     notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować kursu') }
   } finally {
@@ -238,6 +288,8 @@ const createCourse = async () => {
         price: courseForm.price,
         currency: courseForm.currency,
         status: courseForm.status,
+        previewImageUrl: courseForm.previewImageUrl.trim() || null,
+        descriptionJson: courseDescriptionDelta.value,
       },
     })
     internalCourseId.value = created.id
@@ -265,6 +317,8 @@ const saveCourse = async () => {
         price: courseForm.price,
         currency: courseForm.currency,
         status: courseForm.status,
+        previewImageUrl: courseForm.previewImageUrl.trim() || null,
+        descriptionJson: courseDescriptionDelta.value,
       },
     })
     await loadCourse()
@@ -643,6 +697,64 @@ const saveSelectedContent = async () => {
                           />
                         </v-col>
                       </v-row>
+
+                      <v-divider class="my-6" />
+
+                      <div class="text-subtitle-1 font-weight-medium mb-3">Opis i podgląd</div>
+
+                      <v-row class="mb-3" align="start">
+                        <v-col cols="12" md="5">
+                          <v-img
+                            v-if="courseForm.previewImageUrl"
+                            :src="courseForm.previewImageUrl"
+                            aspect-ratio="16/9"
+                            cover
+                            class="rounded-lg border"
+                          />
+                          <v-sheet v-else class="d-flex align-center justify-center rounded-lg border pa-6" height="160">
+                            <div class="text-medium-emphasis">Brak obrazka preview</div>
+                          </v-sheet>
+                        </v-col>
+                        <v-col cols="12" md="7">
+                          <v-text-field
+                            v-model="courseForm.previewImageUrl"
+                            label="URL obrazka preview (opcjonalnie)"
+                            hint="Możesz wkleić link lub wgrać plik"
+                            persistent-hint
+                            class="mb-3"
+                          />
+                          <v-file-input
+                            :model-value="previewFile"
+                            :disabled="!internalCourseId || previewUploading"
+                            :loading="previewUploading"
+                            accept="image/*"
+                            label="Wgraj obrazek preview"
+                            prepend-icon="mdi-image"
+                            class="mb-2"
+                            @update:model-value="(v) => uploadPreview(firstFile(v))"
+                          />
+                          <div v-if="!internalCourseId" class="text-caption text-medium-emphasis">
+                            Aby wgrać obrazek, najpierw utwórz kurs.
+                          </div>
+                          <div class="d-flex flex-wrap gap-3 mt-3">
+                            <v-btn
+                              variant="tonal"
+                              prepend-icon="mdi-image-remove-outline"
+                              :disabled="!courseForm.previewImageUrl"
+                              @click="courseForm.previewImageUrl = ''"
+                            >
+                              Wyczyść obrazek
+                            </v-btn>
+                          </div>
+                        </v-col>
+                      </v-row>
+
+                      <RichTextEditor
+                        v-model="courseDescriptionDelta"
+                        label="Opis kursu (rich text)"
+                        placeholder="Opisz, co daje ten kurs..."
+                        height="260px"
+                      />
 
                       <div class="d-flex flex-wrap gap-3">
                         <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save">

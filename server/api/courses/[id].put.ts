@@ -2,6 +2,7 @@ import { readBody, createError } from 'h3'
 import { prisma } from '../../utils/db'
 import { requireAdmin } from '../../utils/auth'
 import { isSupportedCurrencyCode, normalizeCurrencyCode } from '~/utils/currency'
+import { normalizeDeltaPojo } from '../../utils/rich-text'
 
 const createSlug = (value: string) => {
   return value
@@ -37,6 +38,8 @@ export default defineEventHandler(async (event) => {
     price?: number | string
     currency?: string
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+    previewImageUrl?: string | null
+    descriptionJson?: any | null
   }>(event)
 
   const updateData: Record<string, any> = {}
@@ -61,6 +64,14 @@ export default defineEventHandler(async (event) => {
     else if (body.currency?.trim()) throw createError({ statusCode: 400, statusMessage: 'Unsupported currency' })
   }
   if (body.status) updateData.status = body.status
+  if (body.previewImageUrl !== undefined) {
+    updateData.previewImageUrl = typeof body.previewImageUrl === 'string' && body.previewImageUrl.trim()
+      ? body.previewImageUrl.trim()
+      : null
+  }
+  if (body.descriptionJson !== undefined) {
+    updateData.descriptionJson = normalizeDeltaPojo(body.descriptionJson)
+  }
 
   if (!Object.keys(updateData).length) {
     throw createError({ statusCode: 400, statusMessage: 'No data to update' })
