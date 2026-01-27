@@ -282,7 +282,7 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin', 10)
   const userPassword = await bcrypt.hash('user', 10)
 
-    await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
     update: { password: adminPassword, role: UserRole.ADMIN },
     create: {
@@ -294,7 +294,7 @@ async function main() {
     select: { id: true, email: true, role: true },
   })
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email: USER_EMAIL },
     update: { password: userPassword, role: UserRole.USER },
     create: {
@@ -371,6 +371,96 @@ async function main() {
             'Kurs zrozumiały i dobrze zorganizowany. Fajne krótkie lekcje, które można przerabiać we własnym tempie.',
           status: 'APPROVED',
           approvedAt: new Date(),
+        },
+      ],
+    })
+  }
+
+  const materialsCount = await prisma.material.count()
+  if (materialsCount === 0) {
+    await prisma.material.createMany({
+      data: [
+        {
+          title: 'Checklist: dokumenty w transporcie (PDF)',
+          type: 'PDF',
+          url: 'https://example.com/materials/checklist-transport.pdf',
+          description: 'Krótka lista kontrolna do pobrania.',
+        },
+        {
+          title: 'Webinar: najczęstsze błędy w TSL (video)',
+          type: 'VIDEO',
+          url: 'https://example.com/materials/webinar-bledy-tsl.mp4',
+          description: 'Materiał wideo uzupełniający (placeholder).',
+          durationSec: 1800,
+        },
+        {
+          title: 'Słownik pojęć i skrótów (PDF)',
+          type: 'PDF',
+          url: 'https://example.com/materials/slownik-tsl.pdf',
+          description: 'PDF z podstawowymi pojęciami.',
+        },
+      ],
+    })
+  }
+
+  const publishedCourses = await prisma.course.findMany({
+    where: { status: 'PUBLISHED' },
+    select: { id: true },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+  })
+
+  const availableMaterials = await prisma.material.findMany({
+    select: { id: true },
+    orderBy: { createdAt: 'asc' },
+    take: 10,
+  })
+
+  if (publishedCourses.length && availableMaterials.length) {
+    for (const course of publishedCourses) {
+      const take = Math.min(3, availableMaterials.length)
+      for (let i = 0; i < take; i++) {
+        const materialId = availableMaterials[i]!.id
+        await prisma.courseMaterial.upsert({
+          where: { courseId_materialId: { courseId: course.id, materialId } },
+          update: { position: i + 1 },
+          create: { courseId: course.id, materialId, position: i + 1 },
+        })
+      }
+    }
+  }
+
+  const courseReviewCount = await prisma.courseReview.count()
+  if (courseReviewCount === 0 && publishedCourses.length) {
+    const courseId = publishedCourses[0]!.id
+
+    await prisma.enrollment.upsert({
+      where: { userId_courseId: { userId: user.id, courseId } },
+      update: {},
+      create: { userId: user.id, courseId, source: 'MANUAL' },
+      select: { id: true },
+    })
+
+    await prisma.userCourseProgress.upsert({
+      where: { userId_courseId: { userId: user.id, courseId } },
+      update: { finished: true, finishedAt: new Date(), progressPercent: 100 },
+      create: { userId: user.id, courseId, finished: true, finishedAt: new Date(), progressPercent: 100 },
+      select: { id: true },
+    })
+
+    const now = new Date()
+    await prisma.courseReview.createMany({
+      data: [
+        {
+          courseId,
+          userId: user.id,
+          authorName: 'User',
+          authorTitle: 'Absolwent',
+          rating: 5,
+          content: 'Bardzo praktyczny kurs — dużo konkretów i testy, które naprawdę pomagają.',
+          status: 'APPROVED',
+          approvedAt: now,
+          moderatedById: admin.id,
         },
       ],
     })

@@ -51,6 +51,11 @@ enum ReviewStatus {
   REJECTED
 }
 
+enum MaterialType {
+  PDF
+  VIDEO
+}
+
 model User {
   id       Int      @id @default(autoincrement())
   email    String   @unique
@@ -72,6 +77,8 @@ model User {
   cart Cart?
 
   moderatedReviews Review[] @relation("ReviewModeratedBy")
+  courseReviews CourseReview[]
+  moderatedCourseReviews CourseReview[] @relation("CourseReviewModeratedBy")
 }
 
 model Category {
@@ -112,6 +119,8 @@ model Course {
   progress    UserCourseProgress[]
   orderItems  OrderItem[]
   cartItems   CartItem[]
+  materials   CourseMaterial[]
+  courseReviews CourseReview[]
 
   @@index([categoryId])
   @@index([createdById])
@@ -376,6 +385,68 @@ model Review {
   moderatedById Int?
   moderatedBy User? @relation("ReviewModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
 
+  @@index([status, createdAt])
+  @@index([moderatedById])
+}
+
+model Material {
+  id           Int          @id @default(autoincrement())
+  title        String
+  type         MaterialType
+  url          String
+  description  String?
+  thumbnailUrl String?
+  durationSec  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses CourseMaterial[]
+
+  @@index([type, createdAt])
+}
+
+model CourseMaterial {
+  courseId   Int
+  materialId Int
+  position   Int      @default(0)
+  addedAt    DateTime @default(now())
+
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, materialId])
+  @@index([courseId, position])
+  @@index([materialId])
+}
+
+model CourseReview {
+  id Int @id @default(autoincrement())
+
+  courseId Int
+  userId   Int
+
+  authorName  String
+  authorTitle String?
+  rating      Int
+  content     String
+
+  status ReviewStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  moderatedById Int?
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  moderatedBy User? @relation("CourseReviewModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, courseId])
+  @@index([courseId, status, createdAt])
   @@index([status, createdAt])
   @@index([moderatedById])
 }

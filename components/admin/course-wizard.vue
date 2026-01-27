@@ -11,6 +11,8 @@ type Category = { id: number; title: string }
 type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
+type MaterialType = 'PDF' | 'VIDEO'
+type Material = { id: number; title: string; type: MaterialType; url: string }
 
 type Course = {
   id: number
@@ -94,6 +96,12 @@ const slugify = (value: string) =>
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: categories } = useFetch<Category[]>('/api/categories' as any, { default: () => [] })
 const categoryList = computed(() => categories.value ?? [])
+
+// Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
+const { data: materials, refresh: refreshMaterials } = useFetch<Material[]>('/api/materials' as any, {
+  default: () => [],
+})
+const materialList = computed(() => materials.value ?? [])
 
 const internalCourseId = ref<number | null>(Number.isFinite(Number(props.courseId)) ? Number(props.courseId) : null)
 watch(
@@ -216,6 +224,51 @@ const loadItems = async () => {
 }
 
 watch(internalCourseId, () => loadItems(), { immediate: true })
+
+const courseMaterialsLoading = ref(false)
+const courseMaterialsSaving = ref(false)
+const selectedMaterialIds = ref<number[]>([])
+
+const loadCourseMaterials = async () => {
+  if (!internalCourseId.value) {
+    selectedMaterialIds.value = []
+    return
+  }
+  courseMaterialsLoading.value = true
+  try {
+    const rows = await $fetch<Array<{ id: number; position: number }>>(
+      `/api/course-materials?courseId=${internalCourseId.value}`,
+    )
+    selectedMaterialIds.value = [...rows]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((r) => r.id)
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować materiałów') }
+  } finally {
+    courseMaterialsLoading.value = false
+  }
+}
+
+watch(internalCourseId, () => loadCourseMaterials(), { immediate: true })
+
+const saveCourseMaterials = async () => {
+  if (!internalCourseId.value) return
+  courseMaterialsSaving.value = true
+  notification.value = null
+  try {
+    await $fetch('/api/course-materials', {
+      method: 'POST',
+      body: { courseId: internalCourseId.value, materialIds: selectedMaterialIds.value },
+    })
+    notification.value = { type: 'success', message: 'Materiały zostały zapisane.' }
+    await loadCourseMaterials()
+    await refreshMaterials()
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się zapisać materiałów') }
+  } finally {
+    courseMaterialsSaving.value = false
+  }
+}
 
 type TreeNode = CourseItem & { children: TreeNode[] }
 const tree = computed<TreeNode[]>(() => {
@@ -853,6 +906,66 @@ const saveSelectedContent = async () => {
                         </v-btn>
                       </div>
                     </v-form>
+                  </v-card-text>
+                </v-card>
+
+                <v-card class="mt-6">
+                  <v-card-title class="d-flex align-center justify-space-between">
+                    <span>Materiały (PDF / video)</span>
+                    <v-btn variant="text" size="small" to="/admin/materials" prepend-icon="mdi-open-in-new">
+                      Biblioteka
+                    </v-btn>
+                  </v-card-title>
+                  <v-card-text>
+                    <v-alert v-if="!internalCourseId" variant="tonal" type="info" class="mb-4">
+                      Najpierw utwórz kurs, aby przypisać materiały.
+                    </v-alert>
+
+                    <v-progress-linear v-if="courseMaterialsLoading" indeterminate color="primary" class="mb-4" />
+
+                    <v-autocomplete
+                      v-model="selectedMaterialIds"
+                      :items="materialList"
+                      item-title="title"
+                      item-value="id"
+                      label="Przypisane materiały"
+                      multiple
+                      chips
+                      closable-chips
+                      :disabled="!internalCourseId || courseMaterialsSaving"
+                      class="mb-3"
+                    >
+                      <template #item="{ props: itemProps, item }">
+                        <v-list-item v-bind="itemProps">
+                          <template #prepend>
+                            <v-icon>{{ item.raw.type === 'PDF' ? 'mdi-file-pdf-box' : 'mdi-play-circle-outline' }}</v-icon>
+                          </template>
+                          <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
+                          <v-list-item-subtitle class="text-medium-emphasis">{{ item.raw.url }}</v-list-item-subtitle>
+                        </v-list-item>
+                      </template>
+                    </v-autocomplete>
+
+                    <div class="d-flex justify-end gap-3 flex-wrap">
+                      <v-btn
+                        variant="tonal"
+                        :disabled="!internalCourseId"
+                        prepend-icon="mdi-refresh"
+                        @click="loadCourseMaterials"
+                      >
+                        Odśwież
+                      </v-btn>
+                      <v-btn
+                        color="primary"
+                        variant="flat"
+                        :loading="courseMaterialsSaving"
+                        :disabled="!internalCourseId"
+                        prepend-icon="mdi-content-save"
+                        @click="saveCourseMaterials"
+                      >
+                        Zapisz materiały
+                      </v-btn>
+                    </div>
                   </v-card-text>
                 </v-card>
               </v-col>

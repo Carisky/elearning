@@ -16,6 +16,18 @@ const sections = [
     path: '/admin/courses',
   },
   {
+    id: 'materials',
+    label: 'Materiały',
+    helper: 'Biblioteka PDF / video',
+    path: '/admin/materials',
+  },
+  {
+    id: 'course-reviews',
+    label: 'Opinie kursów',
+    helper: 'Opinie po ukończeniu kursu',
+    path: '/admin/course-reviews',
+  },
+  {
     id: 'site',
     label: 'Strona',
     helper: 'Treść strony głównej',

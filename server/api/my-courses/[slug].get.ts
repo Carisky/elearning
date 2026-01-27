@@ -16,6 +16,23 @@ export default defineEventHandler(async (event) => {
       id: true,
       title: true,
       slug: true,
+      materials: {
+        orderBy: [{ position: 'asc' }, { addedAt: 'asc' }],
+        select: {
+          position: true,
+          material: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              url: true,
+              description: true,
+              thumbnailUrl: true,
+              durationSec: true,
+            },
+          },
+        },
+      },
       items: {
         orderBy: { position: 'asc' },
         select: {
@@ -104,6 +121,19 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const myReview = await prisma.courseReview.findUnique({
+    where: { userId_courseId: { userId: user.id, courseId: course.id } },
+    select: {
+      id: true,
+      status: true,
+      rating: true,
+      content: true,
+      createdAt: true,
+      approvedAt: true,
+      rejectedAt: true,
+    },
+  })
+
   return {
     course: {
       id: course.id,
@@ -113,6 +143,11 @@ export default defineEventHandler(async (event) => {
     progress: course.progress[0] ?? { progressPercent: 0, finished: false, finishedAt: null, updatedAt: null },
     completedItemIds: Array.from(completedItemIds),
     latestAttemptsByItemId: Object.fromEntries(latestAttemptsByItemId.entries()),
+    materials: course.materials.map((row) => ({
+      ...row.material,
+      position: row.position,
+    })),
+    myReview,
     items: course.items.map((item) => ({
       id: item.id,
       type: item.type,
