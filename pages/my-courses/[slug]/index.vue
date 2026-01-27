@@ -74,65 +74,6 @@
               {{ actionError }}
             </v-alert>
 
-            <v-card v-if="payload?.progress?.finished" elevation="1" class="mb-4">
-              <v-card-text>
-                <div class="text-subtitle-1 font-weight-medium mb-2">Opinia po ukończeniu kursu</div>
-
-                <v-alert v-if="reviewError" variant="tonal" type="error" class="mb-3">
-                  {{ reviewError }}
-                </v-alert>
-
-                <template v-if="payload?.myReview">
-                  <div class="d-flex align-center gap-2 mb-2">
-                    <v-chip size="small" variant="tonal" :color="reviewStatusColor[payload.myReview.status]">
-                      {{ reviewStatusLabel[payload.myReview.status] }}
-                    </v-chip>
-                    <div class="text-caption text-medium-emphasis">Ocena: {{ payload.myReview.rating }}/5</div>
-                  </div>
-                  <div class="text-body-2 text-wrap">{{ payload.myReview.content }}</div>
-                  <div v-if="payload.myReview.status === 'PENDING'" class="text-caption text-medium-emphasis mt-2">
-                    Opinia będzie widoczna publicznie po moderacji.
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="text-body-2 text-medium-emphasis mb-3">
-                    Podziel się opinią. Będzie widoczna publicznie po moderacji.
-                  </div>
-
-                  <div class="d-flex flex-wrap align-center gap-2 mb-3">
-                    <v-rating v-model="reviewRating" length="5" color="amber" density="comfortable" />
-                    <div class="text-caption text-medium-emphasis">{{ reviewRating }}/5</div>
-                  </div>
-
-                  <v-text-field
-                    v-model="reviewAuthorTitle"
-                    label="Stanowisko / tytuł (opcjonalnie)"
-                    class="mb-3"
-                  />
-                  <v-textarea
-                    v-model="reviewContent"
-                    label="Treść opinii"
-                    auto-grow
-                    rows="4"
-                    class="mb-3"
-                  />
-
-                  <div class="d-flex justify-end">
-                    <v-btn
-                      color="primary"
-                      variant="flat"
-                      :loading="reviewSubmitting"
-                      :disabled="reviewContent.trim().length < 10"
-                      @click="submitReview()"
-                    >
-                      Wyślij opinię
-                    </v-btn>
-                  </div>
-                </template>
-              </v-card-text>
-            </v-card>
-
             <v-alert v-if="!currentItem && !pending && !error" variant="tonal" type="info">
               Brak materiałów w kursie.
             </v-alert>
@@ -278,7 +219,6 @@ import RichTextViewer from '~/components/rich-text-viewer.vue'
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
 type MaterialType = 'PDF' | 'VIDEO' | 'FILE'
-type CourseReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 type MyCoursePayload = {
   course: { id: number; title: string; slug: string }
@@ -298,17 +238,6 @@ type MyCoursePayload = {
     durationSec: number | null
     position: number
   }>
-  myReview:
-    | {
-        id: number
-        status: CourseReviewStatus
-        rating: number
-        content: string
-        createdAt: string
-        approvedAt: string | null
-        rejectedAt: string | null
-      }
-    | null
   items: Array<{
     id: number
     type: CourseItemType
@@ -460,51 +389,6 @@ watch(
 
 const completing = ref(false)
 const actionError = ref<string>('')
-const reviewSubmitting = ref(false)
-const reviewError = ref('')
-const reviewRating = ref<number>(5)
-const reviewAuthorTitle = ref('')
-const reviewContent = ref('')
-
-const reviewStatusLabel: Record<CourseReviewStatus, string> = {
-  PENDING: 'Do akceptacji',
-  APPROVED: 'Zaakceptowana',
-  REJECTED: 'Odrzucona',
-}
-
-const reviewStatusColor: Record<CourseReviewStatus, string> = {
-  PENDING: 'orange',
-  APPROVED: 'green',
-  REJECTED: 'grey',
-}
-
-const submitReview = async () => {
-  if (!payload.value?.course?.id) return
-  if (!payload.value?.progress?.finished) return
-  if (payload.value.myReview) return
-
-  reviewSubmitting.value = true
-  reviewError.value = ''
-  try {
-    await $fetch('/api/course-reviews', {
-      method: 'POST',
-      body: {
-        courseId: payload.value.course.id,
-        rating: reviewRating.value,
-        authorTitle: reviewAuthorTitle.value,
-        content: reviewContent.value,
-      },
-    })
-    reviewContent.value = ''
-    reviewAuthorTitle.value = ''
-    await refresh()
-    await refreshNuxtData('my-courses')
-  } catch (e: any) {
-    reviewError.value = e?.data?.statusMessage ?? e?.data?.message ?? e?.message ?? 'Nie udało się wysłać opinii.'
-  } finally {
-    reviewSubmitting.value = false
-  }
-}
 
 const completeItem = async (courseItemId: number) => {
   if (isReadOnly.value) return

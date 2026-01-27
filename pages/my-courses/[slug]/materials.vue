@@ -118,4 +118,3 @@ const materialIcon = (type: MaterialType) => {
   return 'mdi-file-outline'
 }
 </script>
-

@@ -15,18 +15,32 @@ type PublicCourseDetail = {
   category?: { id: number; title: string } | null
 }
 
+type PublicCourseReview = {
+  id: number
+  authorName: string
+  authorTitle: string | null
+  rating: number
+  content: string
+  approvedAt: string | null
+  createdAt: string
+}
+
 const route = useRoute()
 const cart = useCart()
 
 const slug = computed(() => String(route.params.slug ?? ''))
 
-const { data, pending, error } = await useFetch<PublicCourseDetail>(
-  () => `/api/public-courses/${slug.value}`,
-  { default: () => null as any },
+const { data, pending, error } = await useFetch<PublicCourseDetail>(() => `/api/public-courses/${slug.value}`, {
+  default: () => null as any,
+})
+
+const { data: courseReviews, pending: reviewsPending, error: reviewsError } = await useFetch<PublicCourseReview[]>(
+  () => `/api/public-course-reviews?slug=${encodeURIComponent(slug.value)}`,
+  { key: () => `public-course-reviews:${slug.value}`, default: () => [] as any },
 )
 
 const course = computed(() => data.value ?? null)
-const tab = ref<'details' | 'program' | 'instructor'>('details')
+const tab = ref<'details' | 'program' | 'instructor' | 'reviews'>('details')
 
 useSeoMeta({
   title: computed(() => course.value?.title ?? 'Kurs'),
@@ -63,11 +77,7 @@ const addToCart = async () => {
     </div>
 
     <v-card v-else-if="course" elevation="2">
-      <v-img
-        :src="course.previewImageUrl || '/placeholders/banner-1.svg'"
-        cover
-        aspect-ratio="21/9"
-      />
+      <v-img :src="course.previewImageUrl || '/placeholders/banner-1.svg'" cover aspect-ratio="21/9" />
 
       <v-card-title class="text-wrap">{{ course.title }}</v-card-title>
       <v-card-subtitle class="text-wrap">
@@ -93,6 +103,7 @@ const addToCart = async () => {
           <v-tab value="details">Szczegóły</v-tab>
           <v-tab value="program">Program</v-tab>
           <v-tab value="instructor">Prowadzący</v-tab>
+          <v-tab value="reviews">Opinie</v-tab>
         </v-tabs>
 
         <v-window v-model="tab" class="mt-4">
@@ -110,8 +121,41 @@ const addToCart = async () => {
             <RichTextViewer v-if="course.instructorJson" :model-value="course.instructorJson" />
             <div v-else class="text-medium-emphasis">Brak informacji.</div>
           </v-window-item>
+
+          <v-window-item value="reviews">
+            <v-progress-linear v-if="reviewsPending" indeterminate color="primary" class="mb-4" />
+
+            <v-alert v-else-if="reviewsError" variant="tonal" type="error" class="mb-4">
+              Nie udało się załadować opinii.
+            </v-alert>
+
+            <v-alert v-else-if="!(courseReviews?.length ?? 0)" variant="tonal" type="info" class="mb-4">
+              Brak opinii.
+            </v-alert>
+
+            <v-row v-else class="ga-4">
+              <v-col v-for="review in courseReviews" :key="review.id" cols="12" md="6">
+                <v-card variant="outlined" rounded="lg">
+                  <v-card-text>
+                    <div class="text-body-2 text-wrap">{{ review.content }}</div>
+
+                    <div class="d-flex align-center justify-space-between mt-5">
+                      <div>
+                        <div class="font-weight-medium">{{ review.authorName }}</div>
+                        <div v-if="review.authorTitle" class="text-caption text-medium-emphasis">
+                          {{ review.authorTitle }}
+                        </div>
+                      </div>
+                      <div class="text-caption text-medium-emphasis">{{ review.rating }}/5</div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-window-item>
         </v-window>
       </v-card-text>
     </v-card>
   </section>
 </template>
+
