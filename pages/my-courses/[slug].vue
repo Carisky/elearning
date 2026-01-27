@@ -72,9 +72,11 @@
               </div>
 
               <v-card v-if="currentItem.type === 'CHAPTER'" elevation="1">
-                <v-card-text class="chapter-content">
-                  <RichTextViewer v-if="currentChapterDelta" :model-value="currentChapterDelta" />
-                  <div v-else class="text-medium-emphasis">Brak tresci.</div>
+                <v-card-text>
+                  <div ref="chapterContentEl" class="chapter-content">
+                    <RichTextViewer v-if="currentChapterDelta" :model-value="currentChapterDelta" />
+                    <div v-else class="text-medium-emphasis">Brak treści.</div>
+                  </div>
                 </v-card-text>
                 <v-divider />
                 <v-card-actions v-if="!isReadOnly" class="justify-end">
@@ -251,6 +253,9 @@ const { data: payload, pending, error, refresh } = await useFetch<MyCoursePayloa
 
 const selectedItemId = ref<number | null>(null)
 const completedSet = computed(() => new Set(payload.value?.completedItemIds ?? []))
+const chapterContentEl = ref<HTMLElement | null>(null)
+
+const chapterReadPercentByItemId = reactive<Record<number, number>>({})
 
 const orderedItems = computed(() => {
   const items = payload.value?.items ?? []
@@ -310,7 +315,14 @@ const isEndOfCourse = computed(() => {
 watch(
   () => orderedItems.value[0]?.id ?? null,
   (firstId) => {
-    if (!selectedItemId.value && firstId) selectedItemId.value = firstId
+    if (selectedItemId.value || !firstId) return
+
+    const stored = process.client ? window.localStorage.getItem(`elearning:lastCourseItemId:${slug.value}`) : null
+    const storedId = stored ? Number(stored) : null
+    const hasStored = storedId && Number.isFinite(storedId) && orderedItems.value.some((i) => i.id === storedId)
+
+    if (hasStored && isUnlocked(storedId!)) selectedItemId.value = storedId!
+    else selectedItemId.value = firstId
   },
   { immediate: true },
 )
@@ -332,6 +344,17 @@ const selectItem = (id: number) => {
   selectedItemId.value = id
   resetAssessment()
 }
+
+watch(
+  () => selectedItemId.value,
+  (id) => {
+    if (!process.client) return
+    if (!id) return
+    window.localStorage.setItem('elearning:lastCourseSlug', slug.value)
+    window.localStorage.setItem(`elearning:lastCourseItemId:${slug.value}`, String(id))
+  },
+  { immediate: true },
+)
 
 const completing = ref(false)
 const actionError = ref<string>('')
@@ -364,6 +387,109 @@ const completeItem = async (courseItemId: number) => {
     completing.value = false
   }
 }
+
+const readSaving = ref(false)
+const readError = ref<string>('')
+const lastSentReadPercent = new Map<number, number>()
+
+const computeReadPercent = () => {
+  const el = chapterContentEl.value
+  if (!el) return 0
+
+  const rect = el.getBoundingClientRect()
+  const viewportH = window.innerHeight || document.documentElement.clientHeight || 0
+  if (!viewportH || rect.height <= 0) return 0
+
+  const seen = viewportH - rect.top
+  const percent = (seen / rect.height) * 100
+  return Math.max(0, Math.min(100, Math.round(percent)))
+}
+
+const saveReadPercent = async (courseItemId: number, readPercent: number) => {
+  if (isReadOnly.value) return
+  if (readSaving.value) return
+  if (!Number.isFinite(readPercent)) return
+
+  const last = lastSentReadPercent.get(courseItemId) ?? 0
+  const shouldSend = readPercent >= 100 || readPercent - last >= 5
+  if (!shouldSend) return
+
+  readSaving.value = true
+  readError.value = ''
+  try {
+    const res = await $fetch<{
+      ok: true
+      readPercent: number
+      completed: boolean
+      progress: { progressPercent: number; finished: boolean }
+    }>('/api/my-course-item-read-progress', {
+      method: 'POST',
+      body: { courseItemId, readPercent },
+    })
+
+    lastSentReadPercent.set(courseItemId, res.readPercent)
+    chapterReadPercentByItemId[courseItemId] = res.readPercent
+
+    if (payload.value) {
+      payload.value.progress = {
+        ...payload.value.progress,
+        progressPercent: res.progress.progressPercent,
+        finished: res.progress.finished,
+      }
+      if (res.completed) {
+        payload.value.completedItemIds = Array.from(new Set([...(payload.value.completedItemIds ?? []), courseItemId]))
+      }
+    }
+
+    if (res.completed) {
+      await refresh()
+      await refreshNuxtData('my-courses')
+    }
+  } catch (e: any) {
+    readError.value = e?.data?.message ?? e?.message ?? 'Nie udało się zapisać postępu czytania.'
+  } finally {
+    readSaving.value = false
+  }
+}
+
+let scrollRaf: number | null = null
+const onScroll = () => {
+  if (!process.client) return
+  if (scrollRaf !== null) return
+  scrollRaf = window.requestAnimationFrame(async () => {
+    scrollRaf = null
+    const item = currentItem.value
+    if (!item || item.type !== 'CHAPTER') return
+    if (completedSet.value.has(item.id)) return
+
+    const percent = computeReadPercent()
+    const prev = chapterReadPercentByItemId[item.id] ?? 0
+    if (percent > prev) chapterReadPercentByItemId[item.id] = percent
+    await saveReadPercent(item.id, percent)
+  })
+}
+
+onMounted(() => {
+  if (!process.client) return
+  window.localStorage.setItem('elearning:lastCourseSlug', slug.value)
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+})
+
+onBeforeUnmount(() => {
+  if (!process.client) return
+  window.removeEventListener('scroll', onScroll)
+  if (scrollRaf !== null) window.cancelAnimationFrame(scrollRaf)
+  scrollRaf = null
+})
+
+watch(
+  () => currentItem.value?.id ?? null,
+  () => {
+    if (!process.client) return
+    nextTick(() => onScroll())
+  },
+)
 
 const goNext = () => {
   const items = orderedItems.value

@@ -60,6 +60,7 @@ model User {
   enrollments    Enrollment[]
   progress       UserCourseProgress[]
   itemProgress   UserCourseItemProgress[]
+  itemReadProgress UserCourseItemReadProgress[]
   attempts       AssessmentAttempt[]
 
   cart Cart?
@@ -123,6 +124,7 @@ model CourseItem {
   chapter      CourseChapter?
   assessment   Assessment?
   userProgress UserCourseItemProgress[]
+  userReadProgress UserCourseItemReadProgress[]
 
   @@unique([courseId, position])
   @@index([courseId, type])
@@ -258,6 +260,21 @@ model UserCourseItemProgress {
 
   @@unique([userId, courseItemId])
   @@index([courseItemId])
+}
+
+model UserCourseItemReadProgress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  courseItemId Int
+  readPercent  Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseItem CourseItem @relation(fields: [courseItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseItemId])
+  @@index([courseItemId])
+  @@index([userId])
 }
 
 model AssessmentAttempt {
