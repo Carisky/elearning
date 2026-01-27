@@ -131,7 +131,7 @@ useSeoMeta({
   <div class="about">
     <section class="about-hero">
       <v-container class="py-10 py-md-16">
-        <v-row class="ga-8" align="center">
+        <v-row align="center">
           <v-col cols="12" md="6">
             <v-chip color="primary" variant="tonal" class="mb-4">
               {{ content.hero.eyebrow }}
@@ -171,7 +171,7 @@ useSeoMeta({
 
     <section class="py-10 py-md-14">
       <v-container>
-        <v-row class="ga-8">
+        <v-row>
           <v-col v-for="(section, idx) in content.sections" :key="`section-${idx}`" cols="12" md="6">
             <v-card class="about-card" rounded="xl" variant="flat">
               <v-card-title class="text-h6">{{ section.title }}</v-card-title>
@@ -192,7 +192,7 @@ useSeoMeta({
           <v-chip variant="tonal" color="primary" prepend-icon="mdi-sparkles">Made for creators</v-chip>
         </div>
 
-        <v-row class="ga-6">
+        <v-row>
           <v-col v-for="(item, idx) in content.values" :key="`value-${idx}`" cols="12" md="4">
             <v-card class="about-card" rounded="xl" variant="flat">
               <v-card-text>
@@ -217,7 +217,7 @@ useSeoMeta({
           </div>
         </div>
 
-        <v-row class="ga-6">
+        <v-row>
           <v-col v-for="(member, idx) in content.team.members" :key="`member-${idx}`" cols="12" md="4">
             <v-card class="about-card" rounded="xl" variant="flat">
               <v-card-text>
@@ -419,4 +419,3 @@ useSeoMeta({
   }
 }
 </style>
-

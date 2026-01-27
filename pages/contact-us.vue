@@ -97,7 +97,7 @@ const copyEmail = async () => {
   <div class="contact">
     <section class="contact-hero">
       <v-container class="py-10 py-md-16">
-        <v-row class="ga-8" align="center">
+        <v-row align="center">
           <v-col cols="12" md="6">
             <v-chip color="primary" variant="tonal" class="mb-4">
               {{ content.hero.eyebrow }}
@@ -128,7 +128,7 @@ const copyEmail = async () => {
 
     <section class="py-10 py-md-14">
       <v-container>
-        <v-row class="ga-6">
+        <v-row>
           <v-col v-for="(card, idx) in content.cards" :key="`card-${idx}`" cols="12" md="4">
             <v-card class="contact-card" rounded="xl" variant="flat">
               <v-card-text>
@@ -148,7 +148,7 @@ const copyEmail = async () => {
 
     <section class="py-10 py-md-14 contact-form">
       <v-container>
-        <v-row class="ga-8">
+        <v-row>
           <v-col cols="12" md="6">
             <h2 class="text-h5 font-weight-bold">{{ content.form.title }}</h2>
             <div v-if="content.form.subtitle" class="text-body-2 text-medium-emphasis mt-2">
@@ -157,7 +157,7 @@ const copyEmail = async () => {
 
             <v-card class="contact-form__card mt-6" rounded="xl" variant="flat">
               <v-card-text>
-                <v-row class="ga-4">
+                <v-row>
                   <v-col cols="12" md="6">
                     <v-text-field v-model="form.name" label="Imię" />
                   </v-col>
@@ -307,4 +307,3 @@ const copyEmail = async () => {
   margin-bottom: 10px;
 }
 </style>
-
