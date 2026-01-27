@@ -127,107 +127,181 @@
 
     <SiteFooter v-if="!isAdminRoute" />
 
-    <v-dialog v-if="!me" v-model="loginDialog" max-width="420" persistent>
-      <v-card>
-        <v-card-title>
-          {{ authMode === "login" ? "Logowanie" : "Rejestracja" }}
-        </v-card-title>
-        <v-card-text>
-          <v-alert
-            v-if="authMode === 'login' && loginError"
-            variant="tonal"
-            dense
-            class="mb-3"
-          >
-            {{ loginError }}
-          </v-alert>
-          <v-alert
-            v-else-if="authMode === 'register' && registerError"
-            variant="tonal"
-            dense
-            class="mb-3"
-          >
-            {{ registerError }}
-          </v-alert>
-          <v-alert
-            v-if="authMode === 'register' && registerSuccess"
-            variant="text"
-            dense
-            class="mb-3"
-          >
-            {{ registerSuccess }}
-          </v-alert>
-          <v-form
-            @submit.prevent="
-              authMode === 'login' ? submitLogin() : submitRegister()
-            "
-          >
-            <template v-if="authMode === 'login'">
-              <v-text-field
-                label="Email"
-                v-model="loginForm.email"
-                type="email"
-                required
-              />
-              <v-text-field
-                label="Hasło"
-                v-model="loginForm.password"
-                type="password"
-                required
-              />
-            </template>
-            <template v-else>
-              <v-text-field label="Имя" v-model="registerForm.name" required />
-              <v-text-field
-                label="Email"
-                v-model="registerForm.email"
-                type="email"
-                required
-              />
-              <v-text-field
-                label="Hasło"
-                v-model="registerForm.password"
-                type="password"
-                required
-              />
-            </template>
-          </v-form>
-          <p class="text-caption">
-            <template v-if="authMode === 'login'">
-              Nie masz konta?
-              <v-btn
-                text
-                variant="text"
-                class="pa-0"
-                @click="setAuthMode('register')"
-              >
-                Zarejestruj śię
+    <v-dialog v-if="!me" v-model="loginDialog"  max-width="960" persistent>
+      <v-card class="auth-card pa-6">
+        <v-row no-gutters>
+          <v-col cols="12" md="6" class="auth-panel">
+            <div class="auth-header">
+              <v-avatar size="40" color="grey-lighten-2" />
+              <v-btn icon variant="text" class="auth-close" @click="closeLogin">
+                <v-icon>mdi-close</v-icon>
               </v-btn>
-            </template>
-            <template v-else>
-              Jusz masz konto?
-              <v-btn
-                text
-                variant="text"
-                class="pa-0"
-                @click="setAuthMode('login')"
-              >
-                Zaloguj
-              </v-btn>
-            </template>
-          </p>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="closeLogin">Anuluj</v-btn>
-          <v-btn
-            :loading="authMode === 'login' ? loginLoading : registerLoading"
-            color="primary"
-            @click="authMode === 'login' ? submitLogin() : submitRegister()"
-          >
-            {{ authMode === "login" ? "Zaloguj" : "Zarejestruj" }}
-          </v-btn>
-        </v-card-actions>
+            </div>
+
+            <h2 class="text-h5 font-weight-semibold mb-1">
+              {{ authMode === "login" ? "Zaloguj się" : "Utwórz konto" }}
+            </h2>
+            <div class="text-body-2 text-medium-emphasis mb-6">
+              <template v-if="authMode === 'login'">
+                Nie masz konta?
+                <v-btn variant="text" class="auth-link" @click="setAuthMode('register')">
+                  Zarejestruj się
+                </v-btn>
+              </template>
+              <template v-else>
+                Masz już konto?
+                <v-btn variant="text" class="auth-link" @click="setAuthMode('login')">
+                  Zaloguj
+                </v-btn>
+              </template>
+            </div>
+
+            <v-alert
+              v-if="authMode === 'login' && loginError"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              type="error"
+            >
+              {{ loginError }}
+            </v-alert>
+            <v-alert
+              v-else-if="authMode === 'register' && registerError"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              type="error"
+            >
+              {{ registerError }}
+            </v-alert>
+            <v-alert
+              v-if="authMode === 'register' && registerSuccess"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              type="success"
+            >
+              {{ registerSuccess }}
+            </v-alert>
+
+            <v-form @submit.prevent="authMode === 'login' ? submitLogin() : submitRegister()">
+              <template v-if="authMode === 'login'">
+                <v-text-field
+                  v-model="loginForm.email"
+                  label="Email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  variant="outlined"
+                  class="mb-3"
+                />
+                <v-text-field
+                  v-model="loginForm.password"
+                  label="Hasło"
+                  :type="passwordFieldType"
+                  autocomplete="current-password"
+                  required
+                  variant="outlined"
+                  class="mb-1"
+                />
+              </template>
+              <template v-else>
+                <v-text-field
+                  v-model="registerForm.name"
+                  label="Imię"
+                  autocomplete="name"
+                  required
+                  variant="outlined"
+                  class="mb-3"
+                />
+                <v-text-field
+                  v-model="registerForm.email"
+                  label="Email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  variant="outlined"
+                  class="mb-3"
+                />
+                <v-text-field
+                  v-model="registerForm.password"
+                  label="Hasło"
+                  :type="passwordFieldType"
+                  autocomplete="new-password"
+                  required
+                  variant="outlined"
+                  class="mb-1"
+                />
+              </template>
+
+              <div v-if="authMode === 'register'" class="text-caption text-medium-emphasis mt-1 mb-2">
+                Użyj co najmniej 8 znaków. Dla bezpieczeństwa dodaj cyfry i znaki specjalne.
+              </div>
+
+              <v-checkbox
+                v-model="showPassword"
+                label="Pokaż hasło"
+                density="compact"
+                hide-details
+                class="mb-6"
+              />
+
+              <div class="d-flex align-center justify-space-between ga-3">
+                <v-btn variant="text" class="auth-link px-0" @click="closeLogin">Anuluj</v-btn>
+                <v-btn
+                  type="submit"
+                  class="auth-submit"
+                  color="primary"
+                  rounded="pill"
+                  :loading="authMode === 'login' ? loginLoading : registerLoading"
+                >
+                  {{ authMode === "login" ? "Zaloguj się" : "Utwórz konto" }}
+                </v-btn>
+              </div>
+            </v-form>
+          </v-col>
+
+          <v-col cols="12" md="6" class="auth-illustration d-none d-md-flex">
+            <div class="auth-illustration-inner">
+              <svg viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="85" cy="78" r="12" stroke="currentColor" stroke-width="3" opacity="0.75" />
+                <circle cx="344" cy="84" r="10" stroke="currentColor" stroke-width="3" opacity="0.5" />
+                <circle cx="320" cy="260" r="10" stroke="currentColor" stroke-width="3" opacity="0.5" />
+                <path
+                  d="M122 216 L196 78 L318 128 L282 258 Z"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  opacity="0.75"
+                />
+                <path
+                  d="M164 246 L106 150 L244 116 L344 206 Z"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  opacity="0.75"
+                />
+                <path d="M250 138 L250 250" stroke="currentColor" stroke-width="3" opacity="0.6" />
+                <path
+                  d="M270 206 C280 196, 292 196, 302 206"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  opacity="0.6"
+                />
+                <path
+                  d="M268 220 C280 210, 292 210, 304 220"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  opacity="0.35"
+                />
+                <g opacity="0.75" fill="currentColor">
+                  <rect x="96" y="262" width="12" height="12" rx="3" />
+                  <rect x="114" y="262" width="12" height="12" rx="3" />
+                  <rect x="132" y="262" width="12" height="12" rx="3" />
+                  <rect x="150" y="262" width="12" height="12" rx="3" />
+                </g>
+              </svg>
+            </div>
+          </v-col>
+        </v-row>
       </v-card>
     </v-dialog>
   </v-app>
@@ -272,6 +346,8 @@ const registerForm = reactive({ name: "", email: "", password: "" });
 const registerError = ref("");
 const registerSuccess = ref("");
 const registerLoading = ref(false);
+const showPassword = ref(false);
+const passwordFieldType = computed(() => (showPassword.value ? "text" : "password"));
 
 const router = useRouter();
 const route = useRoute();
@@ -293,6 +369,7 @@ const openLogin = () => {
 const closeLogin = () => {
   loginDialog.value = false;
   setAuthMode("login");
+  showPassword.value = false;
 };
 
 const loginAndRedirect = async (credentials: {
@@ -326,7 +403,7 @@ const loginAndRedirect = async (credentials: {
     return payload;
   } catch (error: any) {
     loginError.value =
-      error?.data?.message ?? error?.message ?? "Ошибка при входе";
+      error?.data?.message ?? error?.message ?? "Błąd logowania.";
     return null;
   } finally {
     loginLoading.value = false;
@@ -362,7 +439,7 @@ const submitRegister = async () => {
     }
   } catch (err: any) {
     registerError.value =
-      err?.data?.message ?? err?.message ?? "Nie udalo śie zarejestrować";
+      err?.data?.message ?? err?.message ?? "Nie udało się zarejestrować.";
   } finally {
     registerLoading.value = false;
   }
@@ -435,6 +512,85 @@ watch(
 
 .site-shell--admin {
   background: rgb(var(--v-theme-background));
+}
+
+.auth-card {
+  border-radius: 22px !important;
+  overflow: hidden;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.auth-panel {
+  padding: 34px 36px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.auth-close {
+  margin-right: -8px;
+}
+
+.auth-link {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 600;
+  min-width: unset !important;
+}
+
+.auth-submit {
+  min-width: 220px;
+  height: 44px;
+}
+
+.auth-illustration {
+  position: relative;
+  color: rgba(17, 24, 39, 0.82);
+  background:
+    radial-gradient(
+      420px circle at 20% 20%,
+      rgba(var(--v-theme-primary), 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      520px circle at 90% 10%,
+      rgba(37, 99, 235, 0.14),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.85),
+      rgba(255, 255, 255, 0.65)
+    );
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.auth-illustration-inner {
+  width: min(360px, 100%);
+}
+
+.auth-illustration svg {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 960px) {
+  .auth-panel {
+    padding: 26px 22px;
+  }
+
+  .auth-submit {
+    min-width: 180px;
+  }
 }
 
 .site-appbar {
