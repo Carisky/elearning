@@ -26,19 +26,13 @@
           <v-list v-else density="compact" class="py-0">
             <template v-if="orderedMaterials.length">
               <v-list-subheader>Materiały</v-list-subheader>
-              <v-list-item
-                v-for="material in orderedMaterials"
-                :key="`material-${material.id}`"
-                :href="material.url"
-                target="_blank"
-                rel="noopener"
-              >
+              <v-list-item :to="`/my-courses/${slug}/materials`">
                 <template #prepend>
-                  <v-icon>{{ materialIcon(material.type) }}</v-icon>
+                  <v-icon>mdi-folder-open</v-icon>
                 </template>
-                <v-list-item-title class="text-wrap">{{ material.title }}</v-list-item-title>
-                <v-list-item-subtitle v-if="material.description" class="text-wrap">
-                  {{ material.description }}
+                <v-list-item-title class="text-wrap">Materiały ({{ orderedMaterials.length }})</v-list-item-title>
+                <v-list-item-subtitle class="text-wrap">
+                  PDF, wideo i pliki do pobrania
                 </v-list-item-subtitle>
               </v-list-item>
               <v-divider class="my-2" />
@@ -283,7 +277,7 @@ import RichTextViewer from '~/components/rich-text-viewer.vue'
 
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
-type MaterialType = 'PDF' | 'VIDEO'
+type MaterialType = 'PDF' | 'VIDEO' | 'FILE'
 type CourseReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 type MyCoursePayload = {
@@ -369,11 +363,6 @@ const orderedMaterials = computed(() => {
   const materials = payload.value?.materials ?? []
   return [...materials].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 })
-
-const materialIcon = (type: MaterialType) => {
-  if (type === 'PDF') return 'mdi-file-pdf-box'
-  return 'mdi-play-circle-outline'
-}
 
 const isUnlocked = (courseItemId: number) => {
   if (isReadOnly.value) return true

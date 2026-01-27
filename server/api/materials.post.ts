@@ -9,10 +9,10 @@ const clampString = (value: unknown, maxLen: number) => {
   return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed
 }
 
-const normalizeType = (value: unknown): 'PDF' | 'VIDEO' | null => {
+const normalizeType = (value: unknown): 'PDF' | 'VIDEO' | 'FILE' | null => {
   if (typeof value !== 'string') return null
   const upper = value.trim().toUpperCase()
-  return upper === 'PDF' || upper === 'VIDEO' ? upper : null
+  return upper === 'PDF' || upper === 'VIDEO' || upper === 'FILE' ? upper : null
 }
 
 const normalizeDurationSec = (value: unknown): number | null => {
@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
   const durationSec = normalizeDurationSec(body?.durationSec)
 
   if (!title) throw createError({ statusCode: 400, statusMessage: 'Title is required' })
-  if (!type) throw createError({ statusCode: 400, statusMessage: 'Type must be PDF or VIDEO' })
+  if (!type) throw createError({ statusCode: 400, statusMessage: 'Type must be PDF, VIDEO or FILE' })
   if (!url) throw createError({ statusCode: 400, statusMessage: 'URL is required' })
 
   const created = await prisma.material.create({
@@ -61,4 +61,3 @@ export default defineEventHandler(async (event) => {
 
   return created
 })
-

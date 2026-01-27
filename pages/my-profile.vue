@@ -119,9 +119,14 @@
                               <span class="text-caption">{{ enrollment.progress.progressPercent }}%</span>
                             </v-progress-circular>
 
-                            <v-btn color="primary" variant="flat" :to="`/my-courses/${enrollment.course.slug}`">
-                              Ucz się
-                            </v-btn>
+                            <div class="d-flex flex-wrap align-center ga-2">
+                              <v-btn variant="tonal" :to="`/my-courses/${enrollment.course.slug}/materials`" prepend-icon="mdi-folder-open">
+                                Materiały
+                              </v-btn>
+                              <v-btn color="primary" variant="flat" :to="`/my-courses/${enrollment.course.slug}`">
+                                Ucz się
+                              </v-btn>
+                            </div>
                           </div>
                         </div>
 
@@ -266,4 +271,3 @@ const learnLast = async () => {
   border-radius: 10px;
 }
 </style>
-

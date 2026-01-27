@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
 
   const query = getQuery(event)
   const typeRaw = typeof query.type === 'string' ? query.type.toUpperCase() : null
-  const type = typeRaw === 'PDF' || typeRaw === 'VIDEO' ? typeRaw : null
+  const type = typeRaw === 'PDF' || typeRaw === 'VIDEO' || typeRaw === 'FILE' ? typeRaw : null
 
   const q = typeof query.q === 'string' ? query.q.trim() : ''
 
@@ -22,6 +22,10 @@ export default defineEventHandler(async (event) => {
       title: true,
       type: true,
       url: true,
+      storageKey: true,
+      originalFilename: true,
+      mimeType: true,
+      sizeBytes: true,
       description: true,
       thumbnailUrl: true,
       durationSec: true,

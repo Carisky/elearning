@@ -11,7 +11,7 @@ type Category = { id: number; title: string }
 type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
-type MaterialType = 'PDF' | 'VIDEO'
+type MaterialType = 'PDF' | 'VIDEO' | 'FILE'
 type Material = { id: number; title: string; type: MaterialType; url: string }
 
 type Course = {
@@ -911,7 +911,7 @@ const saveSelectedContent = async () => {
 
                 <v-card class="mt-6">
                   <v-card-title class="d-flex align-center justify-space-between">
-                    <span>Materiały (PDF / video)</span>
+                    <span>Materiały (PDF / video / pliki)</span>
                     <v-btn variant="text" size="small" to="/admin/materials" prepend-icon="mdi-open-in-new">
                       Biblioteka
                     </v-btn>
@@ -938,7 +938,13 @@ const saveSelectedContent = async () => {
                       <template #item="{ props: itemProps, item }">
                         <v-list-item v-bind="itemProps">
                           <template #prepend>
-                            <v-icon>{{ item.raw.type === 'PDF' ? 'mdi-file-pdf-box' : 'mdi-play-circle-outline' }}</v-icon>
+                            <v-icon>{{
+                              item.raw.type === 'PDF'
+                                ? 'mdi-file-pdf-box'
+                                : item.raw.type === 'VIDEO'
+                                  ? 'mdi-play-circle-outline'
+                                  : 'mdi-file-outline'
+                            }}</v-icon>
                           </template>
                           <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
                           <v-list-item-subtitle class="text-medium-emphasis">{{ item.raw.url }}</v-list-item-subtitle>

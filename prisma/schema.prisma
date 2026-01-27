@@ -54,6 +54,7 @@ enum ReviewStatus {
 enum MaterialType {
   PDF
   VIDEO
+  FILE
 }
 
 model User {
@@ -394,6 +395,10 @@ model Material {
   title        String
   type         MaterialType
   url          String
+  storageKey   String?
+  originalFilename String?
+  mimeType     String?
+  sizeBytes    Int?
   description  String?
   thumbnailUrl String?
   durationSec  Int?

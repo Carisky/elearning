@@ -9,11 +9,11 @@ const clampString = (value: unknown, maxLen: number) => {
   return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed
 }
 
-const normalizeType = (value: unknown): 'PDF' | 'VIDEO' | null => {
+const normalizeType = (value: unknown): 'PDF' | 'VIDEO' | 'FILE' | null => {
   if (value === null || value === undefined || value === '') return null
   if (typeof value !== 'string') return null
   const upper = value.trim().toUpperCase()
-  return upper === 'PDF' || upper === 'VIDEO' ? upper : null
+  return upper === 'PDF' || upper === 'VIDEO' || upper === 'FILE' ? upper : null
 }
 
 const normalizeDurationSec = (value: unknown): number | null => {
@@ -30,6 +30,12 @@ export default defineEventHandler(async (event) => {
 
   const id = Number(event.context.params?.id)
   if (!Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid id' })
+
+  const existing = await prisma.material.findUnique({
+    where: { id },
+    select: { id: true, storageKey: true },
+  })
+  if (!existing) throw createError({ statusCode: 404, statusMessage: 'Material not found' })
 
   const body = await readBody<{
     title?: unknown
@@ -55,7 +61,7 @@ export default defineEventHandler(async (event) => {
     data: {
       ...(title !== null ? { title } : {}),
       ...(type ? { type } : {}),
-      ...(url !== null ? { url } : {}),
+      ...(existing.storageKey ? {} : url !== null ? { url } : {}),
       description,
       thumbnailUrl,
       durationSec,
