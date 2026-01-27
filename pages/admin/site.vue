@@ -11,6 +11,9 @@ type HomeStat = { value: string; label: string }
 type FeatureCard = { icon: string; title: string; description: string }
 type PromoTile = { variant: 'light' | 'accent'; title: string; description: string; icon: string; href: string }
 type Banner = { title: string; subtitle?: string; imageUrl: string; href: string }
+type Quote = { text: string; author?: string }
+type BestsellersSection = { title: string; subtitle?: string }
+type WhySection = { title: string; body: string }
 
 type HomePageContent = {
   seo: { title: string; description: string }
@@ -24,6 +27,9 @@ type HomePageContent = {
     imageUrl: string
     imageAlt?: string
   }
+  quote: Quote
+  bestsellers: BestsellersSection
+  why: WhySection
   stats: HomeStat[]
   featureCards: FeatureCard[]
   promoTiles: PromoTile[]
@@ -47,6 +53,19 @@ const createDefaultHomeContent = (): HomePageContent => ({
     secondaryCta: { label: 'Kontakt', href: '/contact-us' },
     imageUrl: '/placeholders/hero-abstract.svg',
     imageAlt: 'Abstract hero image',
+  },
+  quote: {
+    text: '„Najlepsza inwestycja w TSL to wiedza, którą możesz wykorzystać od razu.”',
+    author: 'TSL Silesia Group',
+  },
+  bestsellers: {
+    title: 'Najczęściej wybierane',
+    subtitle: 'Bestsellery',
+  },
+  why: {
+    title: 'Dlaczego TSL Silesia Group?',
+    body:
+      'Stawiamy na praktykę i konkret: krótkie lekcje, realne przykłady oraz materiały, do których wrócisz w każdej chwili.\n\nUczysz się we własnym tempie, a wiedzę weryfikujesz testami.\n\nTo szkolenia tworzone przez ludzi z branży – dla ludzi z branży.',
   },
   stats: [
     { value: '2000+', label: 'Uczniów' },
@@ -205,6 +224,18 @@ const save = async () => {
 
                 <v-text-field v-model="form.hero.imageUrl" label="URL obrazka hero" class="mb-3" />
                 <v-text-field v-model="form.hero.imageAlt" label="ALT obrazka hero" class="mb-6" />
+
+                <h3 class="text-h6 mb-3">Cytat</h3>
+                <v-textarea v-model="form.quote.text" label="Treść cytatu" rows="2" class="mb-3" />
+                <v-text-field v-model="form.quote.author" label="Autor (opcjonalnie)" class="mb-6" />
+
+                <h3 class="text-h6 mb-3">Sekcja „Bestsellery”</h3>
+                <v-text-field v-model="form.bestsellers.title" label="Tytuł" class="mb-3" />
+                <v-text-field v-model="form.bestsellers.subtitle" label="Podtytuł (opcjonalnie)" class="mb-6" />
+
+                <h3 class="text-h6 mb-3">Sekcja „Dlaczego TSL Silesia Group”</h3>
+                <v-text-field v-model="form.why.title" label="Tytuł" class="mb-3" />
+                <v-textarea v-model="form.why.body" label="Treść (kilka zdań)" rows="5" class="mb-6" />
 
                 <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
                   Statystyki

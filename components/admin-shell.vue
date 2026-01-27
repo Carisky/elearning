@@ -22,6 +22,12 @@ const sections = [
     path: '/admin/site',
   },
   {
+    id: 'reviews',
+    label: 'Opinie',
+    helper: 'Moderacja opinii',
+    path: '/admin/reviews',
+  },
+  {
     id: 'about-us',
     label: 'O nas',
     helper: 'Treść strony O nas',

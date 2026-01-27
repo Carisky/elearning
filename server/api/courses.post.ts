@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
     price?: number | string
     currency?: string
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+    isFeatured?: boolean
     previewImageUrl?: string | null
     descriptionJson?: any | null
   }>(event)
@@ -85,6 +86,7 @@ export default defineEventHandler(async (event) => {
           priceCents,
           currency,
           status,
+          isFeatured: Boolean(body.isFeatured),
           previewImageUrl,
           descriptionJson,
           createdById: admin.id,

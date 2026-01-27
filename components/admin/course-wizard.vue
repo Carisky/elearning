@@ -20,6 +20,7 @@ type Course = {
   priceCents: number
   currency: SupportedCurrencyCode
   categoryId: number
+  isFeatured: boolean
   previewImageUrl?: string | null
   descriptionJson?: any | null
 }
@@ -106,6 +107,7 @@ const courseForm = reactive({
   price: '0.00',
   currency: 'PLN' as SupportedCurrencyCode,
   status: 'DRAFT' as CourseStatus,
+  isFeatured: false,
   previewImageUrl: '',
 })
 
@@ -178,6 +180,7 @@ const loadCourse = async () => {
     courseForm.price = (data.priceCents / 100).toFixed(2)
     courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
     courseForm.status = data.status ?? 'DRAFT'
+    courseForm.isFeatured = Boolean((data as any).isFeatured)
     courseForm.previewImageUrl = data.previewImageUrl ?? ''
     courseDescriptionDelta.value = toDeltaCourse(data.descriptionJson)
   } catch (e: any) {
@@ -288,6 +291,7 @@ const createCourse = async () => {
         price: courseForm.price,
         currency: courseForm.currency,
         status: courseForm.status,
+        isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
         descriptionJson: courseDescriptionDelta.value,
       },
@@ -317,6 +321,7 @@ const saveCourse = async () => {
         price: courseForm.price,
         currency: courseForm.currency,
         status: courseForm.status,
+        isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
         descriptionJson: courseDescriptionDelta.value,
       },
@@ -717,6 +722,14 @@ const saveSelectedContent = async () => {
                           <v-select v-model="courseForm.status" :items="statusOptions" label="Status" class="mb-3" />
                         </v-col>
                       </v-row>
+
+                      <v-switch
+                        v-model="courseForm.isFeatured"
+                        color="primary"
+                        inset
+                        label="Bestseller (promowane na stronie głównej)"
+                        class="mb-3"
+                      />
 
                       <v-row>
                         <v-col cols="12" md="7">

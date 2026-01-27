@@ -45,6 +45,12 @@ enum EnrollmentSource {
   FREE
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id       Int      @id @default(autoincrement())
   email    String   @unique
@@ -64,6 +70,8 @@ model User {
   attempts       AssessmentAttempt[]
 
   cart Cart?
+
+  moderatedReviews Review[] @relation("ReviewModeratedBy")
 }
 
 model Category {
@@ -86,6 +94,7 @@ model Course {
   priceCents Int          @default(0)
   currency   String       @default("PLN")
   status     CourseStatus @default(DRAFT)
+  isFeatured Boolean      @default(false)
   previewImageUrl String?
   descriptionJson  Json?
 
@@ -345,4 +354,26 @@ model CartItem {
   @@unique([cartId, courseId]) // один курс один раз в корзине
   @@index([cartId])
   @@index([courseId])
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  authorName  String
+  authorTitle String?
+  rating      Int?
+  content     String
+
+  status ReviewStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  approvedAt DateTime?
+  rejectedAt DateTime?
+  moderatedById Int?
+  moderatedBy User? @relation("ReviewModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([moderatedById])
 }

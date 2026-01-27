@@ -38,6 +38,7 @@ export default defineEventHandler(async (event) => {
     price?: number | string
     currency?: string
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+    isFeatured?: boolean
     previewImageUrl?: string | null
     descriptionJson?: any | null
   }>(event)
@@ -64,6 +65,7 @@ export default defineEventHandler(async (event) => {
     else if (body.currency?.trim()) throw createError({ statusCode: 400, statusMessage: 'Unsupported currency' })
   }
   if (body.status) updateData.status = body.status
+  if (body.isFeatured !== undefined) updateData.isFeatured = Boolean(body.isFeatured)
   if (body.previewImageUrl !== undefined) {
     updateData.previewImageUrl = typeof body.previewImageUrl === 'string' && body.previewImageUrl.trim()
       ? body.previewImageUrl.trim()

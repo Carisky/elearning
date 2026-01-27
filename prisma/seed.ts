@@ -86,6 +86,27 @@ const DEFAULT_HOME_PAGE_CONTENT = {
   ],
 } as const
 
+const HOME_PAGE_CONTENT = {
+  ...DEFAULT_HOME_PAGE_CONTENT,
+  quote: {
+    text: '„Najlepsza inwestycja w TSL to wiedza, którą możesz wykorzystać od razu.”',
+    author: 'TSL Silesia Group',
+  },
+  bestsellers: {
+    title: 'Najczęściej wybierane',
+    subtitle: 'Bestsellery',
+  },
+  why: {
+    title: 'Dlaczego TSL Silesia Group?',
+    body:
+      'Stawiamy na praktykę i konkret: krótkie lekcje, realne przykłady oraz materiały, do których wrócisz w każdej chwili.\n\nUczysz się we własnym tempie, a wiedzę weryfikujesz testami.\n\nTo szkolenia tworzone przez ludzi z branży – dla ludzi z branży.',
+  },
+  stats: [
+    { value: '700+', label: 'zadowolonych absolwentów' },
+    { value: '300+', label: 'zrealizowanych szkoleń' },
+  ],
+} as const
+
 const DEFAULT_ABOUT_US_PAGE_CONTENT = {
   seo: {
     title: 'About us — E‑Learning',
@@ -258,8 +279,8 @@ async function main() {
 
   await prisma.sitePage.upsert({
     where: { slug: 'home' },
-    update: { content: DEFAULT_HOME_PAGE_CONTENT },
-    create: { slug: 'home', content: DEFAULT_HOME_PAGE_CONTENT },
+    update: { content: HOME_PAGE_CONTENT },
+    create: { slug: 'home', content: HOME_PAGE_CONTENT },
     select: { id: true },
   })
 
@@ -276,6 +297,54 @@ async function main() {
     create: { slug: 'contact-us', content: DEFAULT_CONTACT_US_PAGE_CONTENT },
     select: { id: true },
   })
+
+  const reviewsCount = await prisma.review.count()
+  if (reviewsCount === 0) {
+    await prisma.review.createMany({
+      data: [
+        {
+          authorName: 'Katarzyna W.',
+          authorTitle: 'Spedytor / dział operacyjny',
+          rating: 5,
+          content:
+            'Bardzo praktyczne szkolenie – dużo przykładów z życia i konkretne wskazówki do pracy. Polecam każdemu, kto chce uporządkować wiedzę w TSL.',
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+        {
+          authorName: 'Michał P.',
+          authorTitle: 'Kierownik transportu',
+          rating: 5,
+          content:
+            'Świetnie przygotowane materiały i prowadzenie krok po kroku. Najbardziej doceniam jasne omówienie dokumentów i procedur.',
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+        {
+          authorName: 'Anna S.',
+          authorTitle: 'Absolwentka kursu',
+          rating: 4,
+          content:
+            'Kurs zrozumiały i dobrze zorganizowany. Fajne krótkie lekcje, które można przerabiać we własnym tempie.',
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+      ],
+    })
+  }
+
+  const featured = await prisma.course.findMany({
+    where: { status: 'PUBLISHED' },
+    select: { id: true },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+  })
+  if (featured.length) {
+    await prisma.course.updateMany({
+      where: { id: { in: featured.map((c) => c.id) } },
+      data: { isFeatured: true },
+    })
+  }
 
   
 }

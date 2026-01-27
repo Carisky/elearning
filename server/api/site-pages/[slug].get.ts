@@ -17,6 +17,19 @@ const defaultHomeContent = {
     imageUrl: '/placeholders/hero-abstract.svg',
     imageAlt: 'Abstract hero image',
   },
+  quote: {
+    text: '„Najlepsza inwestycja w TSL to wiedza, którą możesz wykorzystać od razu.”',
+    author: 'TSL Silesia Group',
+  },
+  bestsellers: {
+    title: 'Najczęściej wybierane',
+    subtitle: 'Bestsellery',
+  },
+  why: {
+    title: 'Dlaczego TSL Silesia Group?',
+    body:
+      'Stawiamy na praktykę i konkret: krótkie lekcje, realne przykłady oraz materiały, do których wrócisz w każdej chwili.\n\nUczysz się we własnym tempie, a wiedzę weryfikujesz testami.\n\nTo szkolenia tworzone przez ludzi z branży – dla ludzi z branży.',
+  },
   stats: [
     { value: '2000+', label: 'Uczniów' },
     { value: '70+', label: 'Lekcji' },
