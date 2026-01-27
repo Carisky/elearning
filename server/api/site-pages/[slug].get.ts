@@ -217,6 +217,34 @@ const defaultContactUsContent = {
   },
 } as const
 
+const defaultTermsContent = {
+  seo: {
+    title: 'Warunki zakupu — E‑Learning',
+    description: 'Warunki zakupu i regulamin korzystania z platformy.',
+  },
+  body: {
+    ops: [
+      {
+        insert: 'Warunki zakupu\n\nUzupełnij treść w panelu administratora.\n',
+      },
+    ],
+  },
+} as const
+
+const defaultPersonalDataContent = {
+  seo: {
+    title: 'Dane osobowe — E‑Learning',
+    description: 'Warunki dotyczące przetwarzania danych osobowych.',
+  },
+  body: {
+    ops: [
+      {
+        insert: 'Dane osobowe\n\nUzupełnij treść w panelu administratora.\n',
+      },
+    ],
+  },
+} as const
+
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
@@ -238,6 +266,10 @@ export default defineEventHandler(async (event) => {
             ? defaultAboutUsContent
             : slug === 'contact-us'
               ? defaultContactUsContent
+              : slug === 'warunki-zakupu'
+                ? defaultTermsContent
+                : slug === 'dane-osobowe'
+                  ? defaultPersonalDataContent
               : null,
     }
   }

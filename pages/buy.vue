@@ -46,13 +46,23 @@
         </v-list-item>
       </v-list>
       <v-divider />
+      <v-card-text class="pb-0">
+        <v-checkbox v-model="acceptedTerms" :disabled="checkoutLoading" hide-details density="compact">
+          <template #label>
+            <span>
+              Przeczytałem(-am) i akceptuję
+              <NuxtLink to="/warunki-zakupu" class="terms-link">warunki zakupu</NuxtLink>.
+            </span>
+          </template>
+        </v-checkbox>
+      </v-card-text>
       <v-card-actions class="d-flex flex-wrap justify-space-between ga-3">
         <div class="text-h6">Razem: {{ formatMoney(totalCents, currency) }}</div>
         <div class="d-flex flex-wrap ga-2">
           <v-btn v-if="!isFastBuy" variant="text" color="error" @click="clear" :disabled="checkoutLoading">
             Wyczyść koszyk
           </v-btn>
-          <v-btn color="primary" :loading="checkoutLoading" :disabled="!items.length" @click="checkout">
+          <v-btn color="primary" :loading="checkoutLoading" :disabled="!items.length || !acceptedTerms" @click="checkout">
             Kup teraz
           </v-btn>
         </div>
@@ -103,6 +113,7 @@ const totalCents = computed(() => items.value.reduce((acc, course) => acc + (cou
 
 const checkoutLoading = ref(false)
 const checkoutError = ref('')
+const acceptedTerms = ref(false)
 
 const formatMoney = (priceCents: number, currencyCode: string) => {
   const amount = (priceCents ?? 0) / 100
@@ -132,6 +143,10 @@ const checkout = async () => {
     await goToLogin()
     return
   }
+  if (!acceptedTerms.value) {
+    checkoutError.value = 'Aby kontynuować, zaakceptuj warunki zakupu.'
+    return
+  }
 
   checkoutLoading.value = true
   try {
@@ -139,7 +154,7 @@ const checkout = async () => {
       ? { courseIds: checkoutCourseIds.value }
       : { mode: 'cart' as const }
 
-    await $fetch('/api/checkout', { method: 'POST', body })
+    await $fetch('/api/checkout', { method: 'POST', body: { ...body, acceptedTerms: acceptedTerms.value } })
 
     if (!isFastBuy.value) {
       await cart.clearCart()
@@ -153,3 +168,9 @@ const checkout = async () => {
 }
 </script>
 
+<style scoped>
+.terms-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: underline;
+}
+</style>

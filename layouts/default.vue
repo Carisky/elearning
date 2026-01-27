@@ -2,7 +2,7 @@
   <v-app
     :class="[
       'site-shell',
-      isAdmin ? 'site-shell--admin' : 'site-shell--public',
+      isAdminRoute ? 'site-shell--admin' : 'site-shell--public',
     ]"
   >
     <v-app-bar elevate-on-scroll height="64" class="site-appbar">
@@ -10,7 +10,7 @@
         class="d-flex d-md-none"
         @click="mobileNav = !mobileNav"
       />
-      <v-toolbar-title v-if="isAdmin" class="font-weight-medium">
+      <v-toolbar-title v-if="isAdminRoute" class="font-weight-medium">
         Panel Administratora
       </v-toolbar-title>
 
@@ -18,7 +18,7 @@
       <v-spacer />
 
       <div class="d-none d-md-flex align-center">
-        <template v-if="isAdmin">
+        <template v-if="isAdminRoute">
           <NuxtLink class="nav-link mr-4" to="/admin">Admin Panel</NuxtLink>
           <v-btn text @click="handleLogout">Wyloguj</v-btn>
         </template>
@@ -67,7 +67,7 @@
         </v-list-item>
         <v-divider />
 
-        <template v-if="isAdmin">
+        <template v-if="isAdminRoute">
           <v-list-item>
             <NuxtLink class="mobile-nav-link" to="/admin" @click="closeNav">
               Admin Panel
@@ -124,6 +124,8 @@
     <v-main class="site-main">
       <NuxtPage />
     </v-main>
+
+    <SiteFooter v-if="!isAdminRoute" />
 
     <v-dialog v-if="!me" v-model="loginDialog" max-width="420" persistent>
       <v-card>
@@ -234,6 +236,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from "vue";
 import { useRouter, useRoute } from "#imports";
+import SiteFooter from "~/components/site-footer.vue";
 type MePayload = {
   id: number;
   email: string;
@@ -272,6 +275,7 @@ const registerLoading = ref(false);
 
 const router = useRouter();
 const route = useRoute();
+const isAdminRoute = computed(() => route.path.startsWith("/admin"));
 
 const setAuthMode = (mode: "login" | "register") => {
   authMode.value = mode;
@@ -375,7 +379,7 @@ const handleLogout = async () => {
 watch(
   () => isAdmin.value,
   (admin) => {
-    if (admin && process.client && !route.path.startsWith("/admin")) {
+    if (admin && process.client && route.path === "/") {
       router.replace("/admin");
     }
   },

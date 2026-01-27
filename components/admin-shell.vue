@@ -39,6 +39,18 @@ const sections = [
     helper: 'Treść strony Kontakt',
     path: '/admin/contact-us',
   },
+  {
+    id: 'warunki-zakupu',
+    label: 'Warunki zakupu',
+    helper: 'Treść strony z regulaminem',
+    path: '/admin/warunki-zakupu',
+  },
+  {
+    id: 'dane-osobowe',
+    label: 'Dane osobowe',
+    helper: 'Treść strony o danych osobowych',
+    path: '/admin/dane-osobowe',
+  },
 ] as const
 
 const route = useRoute()

@@ -239,6 +239,35 @@ const DEFAULT_CONTACT_US_PAGE_CONTENT = {
   },
 } as const
 
+const DEFAULT_TERMS_PAGE_CONTENT = {
+  seo: {
+    title: 'Warunki zakupu — E‑Learning',
+    description: 'Warunki zakupu i regulamin korzystania z platformy.',
+  },
+  body: {
+    ops: [
+      {
+        insert:
+          'Warunki zakupu\n\nUzupełnij treść w panelu administratora.\n',
+      },
+    ],
+  },
+} as const
+
+const DEFAULT_PERSONAL_DATA_PAGE_CONTENT = {
+  seo: {
+    title: 'Dane osobowe — E‑Learning',
+    description: 'Warunki dotyczące przetwarzania danych osobowych.',
+  },
+  body: {
+    ops: [
+      {
+        insert: 'Dane osobowe\n\nUzupełnij treść w panelu administratora.\n',
+      },
+    ],
+  },
+} as const
+
 const upsertCategory = async (prisma: PrismaClient, input: { slug: string; title: string; sortOrder?: number }) => {
   return prisma.category.upsert({
     where: { slug: input.slug },
@@ -295,6 +324,20 @@ async function main() {
     where: { slug: 'contact-us' },
     update: { content: DEFAULT_CONTACT_US_PAGE_CONTENT },
     create: { slug: 'contact-us', content: DEFAULT_CONTACT_US_PAGE_CONTENT },
+    select: { id: true },
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'warunki-zakupu' },
+    update: { content: DEFAULT_TERMS_PAGE_CONTENT },
+    create: { slug: 'warunki-zakupu', content: DEFAULT_TERMS_PAGE_CONTENT },
+    select: { id: true },
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'dane-osobowe' },
+    update: { content: DEFAULT_PERSONAL_DATA_PAGE_CONTENT },
+    create: { slug: 'dane-osobowe', content: DEFAULT_PERSONAL_DATA_PAGE_CONTENT },
     select: { id: true },
   })
 

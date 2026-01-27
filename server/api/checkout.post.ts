@@ -5,7 +5,11 @@ import { getOrCreateCart } from '../utils/cart'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
-  const body = await readBody<{ mode?: 'cart'; courseIds?: number[] }>(event)
+  const body = await readBody<{ mode?: 'cart'; courseIds?: number[]; acceptedTerms?: boolean }>(event)
+
+  if (body?.acceptedTerms !== true) {
+    throw createError({ statusCode: 400, statusMessage: 'Zaakceptuj warunki zakupu, aby kontynuować.' })
+  }
 
   const explicitIds = Array.isArray(body?.courseIds)
     ? body.courseIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
@@ -99,4 +103,3 @@ export default defineEventHandler(async (event) => {
 
   return { ok: true, orderId: order.id }
 })
-
