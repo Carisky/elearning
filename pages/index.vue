@@ -231,26 +231,27 @@ const addToCart = async (courseId: number) => {
               :alt="content.hero.imageAlt ?? ''"
               class="hero-image"
               cover
+              height="420"
               rounded="xl"
             />
           </div>
         </div>
-      </v-container>
-    </section>
 
-    <section class="home-band home-band--stats">
-      <v-container class="py-8 py-md-10">
-        <div class="band-header">
-          <div class="band-title">Statystyki</div>
-        </div>
-        <div class="stats-grid">
-          <v-card v-for="(s, idx) in stats" :key="`stat-${idx}`" class="stat-card" variant="flat">
-            <v-card-text>
-              <div class="stat-value">{{ s.value }}</div>
-              <div class="stat-label">{{ s.label }}</div>
-            </v-card-text>
-          </v-card>
-        </div>
+        <v-card v-if="stats.length" class="hero-stats mt-8" variant="flat">
+          <v-card-text>
+            <div class="hero-stats__header">
+              <div class="hero-stats__title">Statystyki</div>
+            </div>
+            <div class="stats-grid stats-grid--hero">
+              <v-card v-for="(s, idx) in stats" :key="`hero-stat-${idx}`" class="stat-card" variant="flat">
+                <v-card-text>
+                  <div class="stat-value">{{ s.value }}</div>
+                  <div class="stat-label">{{ s.label }}</div>
+                </v-card-text>
+              </v-card>
+            </div>
+          </v-card-text>
+        </v-card>
       </v-container>
     </section>
 
@@ -288,7 +289,14 @@ const addToCart = async (courseId: number) => {
                     {{ formatMoney(course.priceCents, course.currency) }}
                   </div>
                   <div class="d-flex gap-2">
-                    <v-btn size="small" variant="text" :to="`/courses/${course.slug}`">
+                    <v-btn
+                      size="small"
+                      variant="text"
+                      color="primary"
+                      class="course-details-btn"
+                      append-icon="mdi-arrow-right"
+                      :to="`/courses/${course.slug}`"
+                    >
                       Szczegóły
                     </v-btn>
                     <v-btn size="small" color="primary" variant="tonal" @click="addToCart(course.id)">
@@ -305,14 +313,18 @@ const addToCart = async (courseId: number) => {
 
     <section class="home-band home-band--why">
       <v-container class="py-10 py-md-12">
-        <div class="band-header">
-          <div class="band-title">{{ content.why.title }}</div>
-        </div>
-        <div class="why-body mt-4">
-          <p v-for="(p, idx) in whyParagraphs" :key="`why-${idx}`" class="why-paragraph">
-            {{ p }}
-          </p>
-        </div>
+        <v-card class="why-card" variant="flat">
+          <v-card-text>
+            <div class="why-card__header">
+              <div class="why-card__title">{{ content.why.title }}</div>
+            </div>
+            <div class="why-body mt-4">
+              <p v-for="(p, idx) in whyParagraphs" :key="`why-${idx}`" class="why-paragraph">
+                {{ p }}
+              </p>
+            </div>
+          </v-card-text>
+        </v-card>
       </v-container>
     </section>
 
@@ -396,6 +408,25 @@ const addToCart = async (courseId: number) => {
     0 3px 14px rgba(17, 24, 39, 0.08);
 }
 
+.hero-stats {
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 60px rgba(17, 24, 39, 0.06);
+}
+
+.hero-stats__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-stats__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.86);
+}
+
 .quote-card {
   border: 1px solid rgba(17, 24, 39, 0.08);
 }
@@ -413,10 +444,6 @@ const addToCart = async (courseId: number) => {
 .home-band {
   border-top: 1px solid rgba(17, 24, 39, 0.06);
   background: rgba(255, 255, 255, 0.98);
-}
-
-.home-band--stats {
-  background: rgba(17, 24, 39, 0.02);
 }
 
 .home-band--why {
@@ -450,6 +477,7 @@ const addToCart = async (courseId: number) => {
   display: grid;
   gap: 16px;
   margin-top: 14px;
+  grid-template-columns: 1fr;
 }
 
 .stat-card {
@@ -489,11 +517,35 @@ const addToCart = async (courseId: number) => {
   color: rgb(var(--v-theme-primary));
 }
 
+.course-details-btn :deep(.v-btn__content) {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.why-card {
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 60px rgba(17, 24, 39, 0.06);
+}
+
+.why-card__title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.92);
+}
+
 .why-paragraph {
   margin: 0 0 12px;
   color: rgba(17, 24, 39, 0.76);
   line-height: 1.65;
   max-width: 62rem;
+}
+
+@media (min-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 960px) {
@@ -502,9 +554,5 @@ const addToCart = async (courseId: number) => {
     align-items: center;
     gap: 48px;
   }
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 </style>
-
