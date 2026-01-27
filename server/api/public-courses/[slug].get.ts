@@ -18,6 +18,8 @@ export default defineEventHandler(async (event) => {
       currency: true,
       previewImageUrl: true,
       descriptionJson: true,
+      programJson: true,
+      instructorJson: true,
       category: { select: { id: true, title: true } },
     },
   })
@@ -31,4 +33,3 @@ export default defineEventHandler(async (event) => {
     descriptionText: deltaToPlainText(course.descriptionJson),
   }
 })
-

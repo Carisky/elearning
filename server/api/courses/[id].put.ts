@@ -41,6 +41,8 @@ export default defineEventHandler(async (event) => {
     isFeatured?: boolean
     previewImageUrl?: string | null
     descriptionJson?: any | null
+    programJson?: any | null
+    instructorJson?: any | null
   }>(event)
 
   const updateData: Record<string, any> = {}
@@ -73,6 +75,12 @@ export default defineEventHandler(async (event) => {
   }
   if (body.descriptionJson !== undefined) {
     updateData.descriptionJson = normalizeDeltaPojo(body.descriptionJson)
+  }
+  if (body.programJson !== undefined) {
+    updateData.programJson = normalizeDeltaPojo(body.programJson)
+  }
+  if (body.instructorJson !== undefined) {
+    updateData.instructorJson = normalizeDeltaPojo(body.instructorJson)
   }
 
   if (!Object.keys(updateData).length) {

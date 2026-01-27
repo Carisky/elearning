@@ -2,6 +2,7 @@ import { readBody, createError } from 'h3'
 import { prisma } from '../utils/db'
 import { requireAdmin } from '../utils/auth'
 import { isSupportedCurrencyCode, normalizeCurrencyCode } from '~/utils/currency'
+import { normalizeDeltaPojo } from '../utils/rich-text'
 
 const createSlug = (value: string) => {
   return value
@@ -34,6 +35,8 @@ export default defineEventHandler(async (event) => {
     isFeatured?: boolean
     previewImageUrl?: string | null
     descriptionJson?: any | null
+    programJson?: any | null
+    instructorJson?: any | null
   }>(event)
 
   if (!body.title || !body.categoryId) {
@@ -57,9 +60,9 @@ export default defineEventHandler(async (event) => {
   const previewImageUrl = typeof body.previewImageUrl === 'string' && body.previewImageUrl.trim()
     ? body.previewImageUrl.trim()
     : null
-  const descriptionJson = body.descriptionJson && typeof body.descriptionJson === 'object' && Array.isArray(body.descriptionJson.ops)
-    ? { ops: body.descriptionJson.ops }
-    : null
+  const descriptionJson = normalizeDeltaPojo(body.descriptionJson)
+  const programJson = normalizeDeltaPojo(body.programJson)
+  const instructorJson = normalizeDeltaPojo(body.instructorJson)
 
   const baseSlug = slug
   let course:
@@ -89,6 +92,8 @@ export default defineEventHandler(async (event) => {
           isFeatured: Boolean(body.isFeatured),
           previewImageUrl,
           descriptionJson,
+          programJson,
+          instructorJson,
           createdById: admin.id,
         },
       })

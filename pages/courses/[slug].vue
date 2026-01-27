@@ -9,6 +9,8 @@ type PublicCourseDetail = {
   currency: string
   previewImageUrl: string | null
   descriptionJson: any | null
+  programJson: any | null
+  instructorJson: any | null
   descriptionText: string
   category?: { id: number; title: string } | null
 }
@@ -24,6 +26,7 @@ const { data, pending, error } = await useFetch<PublicCourseDetail>(
 )
 
 const course = computed(() => data.value ?? null)
+const tab = ref<'details' | 'program' | 'instructor'>('details')
 
 useSeoMeta({
   title: computed(() => course.value?.title ?? 'Kurs'),
@@ -41,11 +44,6 @@ const formatMoney = (priceCents: number, currency: string) => {
 const addToCart = async () => {
   if (!course.value) return
   await cart.addCourse(course.value.id)
-}
-
-const fastBuy = async () => {
-  if (!course.value) return
-  await navigateTo({ path: '/buy', query: { fastbuy: String(course.value.id) } })
 }
 </script>
 
@@ -88,17 +86,32 @@ const fastBuy = async () => {
             >
               {{ cart.courseIds.value.includes(course.id) ? 'W koszyku' : 'Dodaj do koszyka' }}
             </v-btn>
-            <v-btn variant="outlined" color="primary" @click="fastBuy">
-              Kup 1 klik
-            </v-btn>
           </div>
         </div>
 
-        <div class="text-h6 mb-3">Opis kursu</div>
-        <RichTextViewer v-if="course.descriptionJson" :model-value="course.descriptionJson" />
-        <div v-else class="text-medium-emphasis">Brak opisu.</div>
+        <v-tabs v-model="tab" color="primary">
+          <v-tab value="details">Szczegóły</v-tab>
+          <v-tab value="program">Program</v-tab>
+          <v-tab value="instructor">Prowadzący</v-tab>
+        </v-tabs>
+
+        <v-window v-model="tab" class="mt-4">
+          <v-window-item value="details">
+            <RichTextViewer v-if="course.descriptionJson" :model-value="course.descriptionJson" />
+            <div v-else class="text-medium-emphasis">Brak informacji.</div>
+          </v-window-item>
+
+          <v-window-item value="program">
+            <RichTextViewer v-if="course.programJson" :model-value="course.programJson" />
+            <div v-else class="text-medium-emphasis">Brak informacji.</div>
+          </v-window-item>
+
+          <v-window-item value="instructor">
+            <RichTextViewer v-if="course.instructorJson" :model-value="course.instructorJson" />
+            <div v-else class="text-medium-emphasis">Brak informacji.</div>
+          </v-window-item>
+        </v-window>
       </v-card-text>
     </v-card>
   </section>
 </template>
-

@@ -49,7 +49,7 @@
             </div>
           </v-card-title>
           <v-card-text>
-            <v-row class="ga-3" align="center">
+            <v-row align="center">
               <v-col cols="12" md="5">
                 <v-select
                   v-model="selectedCategoryId"
@@ -105,7 +105,7 @@
         </v-card>
       </v-expand-transition>
 
-      <v-row class="ga-4">
+      <v-row>
         <v-col v-for="course in filteredCourses" :key="course.id" cols="12" sm="6" md="3">
         <v-card elevation="2" class="h-100 d-flex flex-column">
           <v-img
@@ -119,15 +119,12 @@
           </v-card-subtitle>
 
           <v-card-text class="flex-grow-1">
-            <div v-if="course.descriptionText" class="text-body-2 text-medium-emphasis mb-3">
-              opis : {{ course.descriptionText }}
-            </div>
             <div class="text-h6">{{ formatMoney(course.priceCents, course.currency) }}</div>
           </v-card-text>
 
           <v-card-actions class="d-flex flex-wrap ga-2">
             <v-btn variant="text" color="primary" :to="`/courses/${course.slug}`">
-              Szczegóły
+              Więcej
             </v-btn>
             <v-btn
               variant="flat"
@@ -136,9 +133,6 @@
               @click="addToCart(course.id)"
             >
               {{ cart.courseIds.value.includes(course.id) ? 'W koszyku' : 'Dodaj do koszyka' }}
-            </v-btn>
-            <v-btn variant="outlined" color="primary" @click="fastBuy(course.id)">
-              Kup 1 klik
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -160,7 +154,6 @@ type PublicCourse = {
   priceCents: number
   currency: string
   previewImageUrl?: string | null
-  descriptionText?: string | null
   category?: { id: number; title: string } | null
 }
 
@@ -255,9 +248,5 @@ const formatMoney = (priceCents: number, currency: string) => {
 
 const addToCart = async (courseId: number) => {
   await cart.addCourse(courseId)
-}
-
-const fastBuy = async (courseId: number) => {
-  await navigateTo({ path: '/buy', query: { fastbuy: String(courseId) } })
 }
 </script>

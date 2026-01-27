@@ -97,6 +97,8 @@ model Course {
   isFeatured Boolean      @default(false)
   previewImageUrl String?
   descriptionJson  Json?
+  programJson      Json?
+  instructorJson   Json?
 
   createdById Int
   createdAt   DateTime @default(now())

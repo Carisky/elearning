@@ -23,6 +23,8 @@ type Course = {
   isFeatured: boolean
   previewImageUrl?: string | null
   descriptionJson?: any | null
+  programJson?: any | null
+  instructorJson?: any | null
 }
 
 type CourseItem = {
@@ -112,6 +114,9 @@ const courseForm = reactive({
 })
 
 const courseDescriptionDelta = ref<any | null>(null)
+const courseProgramDelta = ref<any | null>(null)
+const courseInstructorDelta = ref<any | null>(null)
+const coursePublicTab = ref<'details' | 'program' | 'instructor'>('details')
 const previewFile = ref<any>(null)
 const previewUploading = ref(false)
 
@@ -183,6 +188,8 @@ const loadCourse = async () => {
     courseForm.isFeatured = Boolean((data as any).isFeatured)
     courseForm.previewImageUrl = data.previewImageUrl ?? ''
     courseDescriptionDelta.value = toDeltaCourse(data.descriptionJson)
+    courseProgramDelta.value = toDeltaCourse(data.programJson)
+    courseInstructorDelta.value = toDeltaCourse(data.instructorJson)
   } catch (e: any) {
     notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować kursu') }
   } finally {
@@ -294,6 +301,8 @@ const createCourse = async () => {
         isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
         descriptionJson: courseDescriptionDelta.value,
+        programJson: courseProgramDelta.value,
+        instructorJson: courseInstructorDelta.value,
       },
     })
     internalCourseId.value = created.id
@@ -324,6 +333,8 @@ const saveCourse = async () => {
         isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
         descriptionJson: courseDescriptionDelta.value,
+        programJson: courseProgramDelta.value,
+        instructorJson: courseInstructorDelta.value,
       },
     })
     await loadCourse()
@@ -798,12 +809,40 @@ const saveSelectedContent = async () => {
                         </v-col>
                       </v-row>
 
-                      <RichTextEditor
-                        v-model="courseDescriptionDelta"
-                        label="Opis kursu (rich text)"
-                        placeholder="Opisz, co daje ten kurs..."
-                        height="260px"
-                      />
+                      <v-tabs v-model="coursePublicTab" color="primary" class="mt-2">
+                        <v-tab value="details">Szczegóły</v-tab>
+                        <v-tab value="program">Program</v-tab>
+                        <v-tab value="instructor">Prowadzący</v-tab>
+                      </v-tabs>
+
+                      <v-window v-model="coursePublicTab" class="mt-4">
+                        <v-window-item value="details">
+                          <RichTextEditor
+                            v-model="courseDescriptionDelta"
+                            label="Szczegóły (zakładka publiczna)"
+                            placeholder="Opis, korzyści, wymagania..."
+                            height="260px"
+                          />
+                        </v-window-item>
+
+                        <v-window-item value="program">
+                          <RichTextEditor
+                            v-model="courseProgramDelta"
+                            label="Program (zakładka publiczna)"
+                            placeholder="Plan, agenda, co jest w środku..."
+                            height="260px"
+                          />
+                        </v-window-item>
+
+                        <v-window-item value="instructor">
+                          <RichTextEditor
+                            v-model="courseInstructorDelta"
+                            label="Prowadzący (zakładka publiczna)"
+                            placeholder="Kim jest prowadzący, doświadczenie, certyfikaty..."
+                            height="260px"
+                          />
+                        </v-window-item>
+                      </v-window>
 
                       <div class="d-flex flex-wrap gap-3">
                         <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save">
