@@ -186,7 +186,7 @@ export const createUserInvite = async (createdById: number, input: { email: unkn
     `</ul>`
 
   try {
-    const subject = 'Приглашение на курсы'
+    const subject = 'Zaproszenie do kursów'
     const sent = await sendTemplateMail({
       to: email,
       subject,
