@@ -1,8 +1,20 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../../prisma/generated/client'
 
+const parseSchemaFromDatabaseUrl = (databaseUrl: string): string | undefined => {
+  try {
+    const url = new URL(databaseUrl)
+    const schema = url.searchParams.get('schema')?.trim()
+    return schema || undefined
+  } catch {
+    return undefined
+  }
+}
+
 const prismaClientSingleton = () => {
-  const pool = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+  const connectionString = process.env.DATABASE_URL!
+  const schema = parseSchemaFromDatabaseUrl(connectionString)
+  const pool = new PrismaPg({ connectionString }, schema ? { schema } : undefined)
   return new PrismaClient({ adapter: pool })
 }
 

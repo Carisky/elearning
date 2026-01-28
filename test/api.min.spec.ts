@@ -156,5 +156,74 @@ describe('Minimal API flows', () => {
     const myCourses = await apiJson<Array<{ course: { id: number; title: string } }>>(userJar, '/api/my-courses')
     expect(myCourses.some((e) => e.course.id === course.id)).toBe(true)
   })
-})
 
+  it('invites: admin sends invite and user registers to get access', async () => {
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_invites')
+    await apiJson(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const category = await apiJson<{ id: number }>(adminJar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat ${Date.now()}` },
+    })
+
+    const course = await apiJson<{ id: number; title: string }>(adminJar, '/api/courses', {
+      method: 'POST',
+      body: {
+        title: `Course ${Date.now()}`,
+        categoryId: category.id,
+        price: 0,
+        currency: 'PLN',
+        status: 'PUBLISHED',
+      },
+    })
+
+    const invitedEmail = randomEmail('invited')
+
+    const invite = await apiJson<{ id: number; email: string; inviteLink: string }>(
+      adminJar,
+      '/api/admin/user-invites',
+      {
+        method: 'POST',
+        body: { email: invitedEmail, courseIds: [course.id] },
+      }
+    )
+
+    expect(invite.email).toBe(invitedEmail.toLowerCase())
+    expect(invite.inviteLink).toContain('/invite/')
+
+    const token = invite.inviteLink.split('/invite/')[1] ?? ''
+    expect(token.length).toBeGreaterThan(10)
+
+    const preview = await apiJson<{ email: string; courses: Array<{ id: number }> }>(
+      {},
+      `/api/user-invites/preview?token=${encodeURIComponent(token)}`
+    )
+    expect(preview.email).toBe(invitedEmail.toLowerCase())
+    expect(preview.courses.some((c) => c.id === course.id)).toBe(true)
+
+    await apiJson({}, '/api/user-invites/accept', {
+      method: 'POST',
+      body: { token },
+    })
+
+    const invitedJar: CookieJar = {}
+    await apiJson(invitedJar, '/api/register', {
+      method: 'POST',
+      body: { email: invitedEmail, password: 'pass12345', name: 'Invited', inviteToken: token },
+    })
+
+    const myCourses = await apiJson<Array<{ course: { id: number } }>>(invitedJar, '/api/my-courses')
+    expect(myCourses.some((e) => e.course.id === course.id)).toBe(true)
+
+    const adminInvites = await apiJson<Array<{ id: number; email: string; status: string }>>(
+      adminJar,
+      '/api/admin/user-invites'
+    )
+    const row = adminInvites.find((i) => i.id === invite.id)
+    expect(row?.status).toBe('ACCESS_GRANTED')
+  })
+})

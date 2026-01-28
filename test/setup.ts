@@ -14,6 +14,6 @@ await setup({
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
     STORAGE: process.env.STORAGE,
+    MAIL_TRANSPORT: process.env.MAIL_TRANSPORT,
   },
 })
-

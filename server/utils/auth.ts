@@ -6,11 +6,14 @@ import type { User, UserRole } from '../../prisma/generated/client'
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret'
 const COOKIE_NAME = 'auth'
+const COOKIE_PATH = '/'
+const LEGACY_COOKIE_PATH = '/api'
 
 const cookieBaseOptions = {
   httpOnly: true,
   sameSite: 'lax' as const,
   maxAge: 60 * 60 * 24 * 30,
+  path: COOKIE_PATH,
 }
 
 const parseForwardedProto = (value: string): string | null => {
@@ -55,8 +58,9 @@ const shouldUseSecureCookie = (event: H3Event): boolean => {
   return isRequestSecure(event)
 }
 
-const cookieOptions = (event: H3Event) => ({
+const cookieOptions = (event: H3Event, overrides?: Partial<typeof cookieBaseOptions>) => ({
   ...cookieBaseOptions,
+  ...overrides,
   secure: shouldUseSecureCookie(event),
 })
 
@@ -76,10 +80,13 @@ export const signToken = (user: Pick<User, 'id' | 'email' | 'role'>) => {
 
 export const setAuthToken = (event: H3Event, token: string) => {
   setCookie(event, COOKIE_NAME, token, cookieOptions(event))
+  // Old builds stored auth cookie at Path=/api. Remove it to avoid duplicates.
+  setCookie(event, COOKIE_NAME, '', cookieOptions(event, { path: LEGACY_COOKIE_PATH, maxAge: 0 }))
 }
 
 export const clearAuthToken = (event: H3Event) => {
-  setCookie(event, COOKIE_NAME, '', { ...cookieOptions(event), maxAge: 0 })
+  setCookie(event, COOKIE_NAME, '', { ...cookieOptions(event), maxAge: 0, path: COOKIE_PATH })
+  setCookie(event, COOKIE_NAME, '', { ...cookieOptions(event), maxAge: 0, path: LEGACY_COOKIE_PATH })
 }
 
 export const getTokenFromEvent = (event: H3Event): string | undefined =>

@@ -51,6 +51,7 @@ export default async () => {
   process.env.DATABASE_URL = testDbUrl
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
   process.env.STORAGE = process.env.STORAGE || path.join(rootDir, '.storage-test')
+  process.env.MAIL_TRANSPORT = 'noop'
 
   execSync('npx prisma migrate deploy --config prisma.config.ts', {
     cwd: rootDir,

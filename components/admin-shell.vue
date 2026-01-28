@@ -16,6 +16,12 @@ const sections = [
     path: '/admin/courses',
   },
   {
+    id: 'user-invites',
+    label: 'Zaproszenia',
+    helper: 'Tworzenie zaproszeń i dostępów',
+    path: '/admin/user-invites',
+  },
+  {
     id: 'materials',
     label: 'Materiały',
     helper: 'Biblioteka PDF / video',
@@ -168,3 +174,4 @@ const activeSection = computed(() =>
   max-width: none !important;
 }
 </style>
+

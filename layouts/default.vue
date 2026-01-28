@@ -214,6 +214,17 @@
                   variant="outlined"
                   class="mb-3"
                 />
+                <v-alert v-if="invitePreview" type="info" variant="tonal" class="mb-4">
+                  Zaproszenie dla: <strong>{{ invitePreview.email }}</strong>
+                  <template v-if="invitePreview.courses?.length">
+                    <div class="mt-2">
+                      Kursy:
+                      <span v-for="(c, idx) in invitePreview.courses" :key="c.id">
+                        {{ c.title }}<span v-if="idx < invitePreview.courses.length - 1">, </span>
+                      </span>
+                    </div>
+                  </template>
+                </v-alert>
                 <v-text-field
                   v-model="registerForm.email"
                   label="Email"
@@ -221,6 +232,7 @@
                   autocomplete="email"
                   required
                   variant="outlined"
+                  :disabled="Boolean(inviteToken)"
                   class="mb-3"
                 />
                 <v-text-field
@@ -349,6 +361,16 @@ const registerLoading = ref(false);
 const showPassword = ref(false);
 const passwordFieldType = computed(() => (showPassword.value ? "text" : "password"));
 
+type InvitePreview = {
+  email: string;
+  expiresAt: string;
+  status: string;
+  courses: Array<{ id: number; title: string }>;
+};
+
+const inviteToken = ref("");
+const invitePreview = ref<InvitePreview | null>(null);
+
 const router = useRouter();
 const route = useRoute();
 const isAdminRoute = computed(() => route.path.startsWith("/admin"));
@@ -360,9 +382,9 @@ const setAuthMode = (mode: "login" | "register") => {
   registerSuccess.value = "";
 };
 
-const openLogin = () => {
+const openLogin = (mode: "login" | "register" = "login") => {
   closeNav();
-  setAuthMode("login");
+  setAuthMode(mode);
   loginDialog.value = true;
 };
 
@@ -370,6 +392,8 @@ const closeLogin = () => {
   loginDialog.value = false;
   setAuthMode("login");
   showPassword.value = false;
+  inviteToken.value = "";
+  invitePreview.value = null;
 };
 
 const loginAndRedirect = async (credentials: {
@@ -428,7 +452,10 @@ const submitRegister = async () => {
   try {
     await $fetch("/api/register", {
       method: "POST",
-      body: registerForm,
+      body: {
+        ...registerForm,
+        inviteToken: inviteToken.value || undefined,
+      },
     });
     registerSuccess.value = "Zarejestrowano.";
     const loginPayload = await loginAndRedirect(credentials);
@@ -436,6 +463,8 @@ const submitRegister = async () => {
       registerForm.name = "";
       registerForm.email = "";
       registerForm.password = "";
+      inviteToken.value = "";
+      invitePreview.value = null;
     }
   } catch (err: any) {
     registerError.value =
@@ -484,7 +513,41 @@ watch(
   () => route.query.login,
   (value) => {
     if (!value || me.value) return;
-    openLogin();
+    const mode =
+      typeof route.query.mode === "string" && route.query.mode === "register"
+        ? "register"
+        : "login";
+    openLogin(mode);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.query.invite,
+  async (value) => {
+    if (!process.client) return;
+    if (me.value) return;
+
+    const token = typeof value === "string" ? value.trim() : "";
+    if (!token) return;
+
+    inviteToken.value = token;
+    invitePreview.value = null;
+    openLogin("register");
+
+    try {
+      const preview = await $fetch<InvitePreview>("/api/user-invites/preview", {
+        query: { token },
+      });
+      invitePreview.value = preview;
+      registerForm.email = preview.email;
+    } catch (error: any) {
+      invitePreview.value = null;
+      registerError.value =
+        error?.data?.message ??
+        error?.message ??
+        "Nie udaЕ‚o siД™ pobraД‡ zaproszenia.";
+    }
   },
   { immediate: true },
 );

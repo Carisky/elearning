@@ -43,6 +43,7 @@ enum EnrollmentSource {
   ORDER
   MANUAL
   FREE
+  INVITE
 }
 
 enum ReviewStatus {
@@ -80,6 +81,9 @@ model User {
   moderatedReviews Review[] @relation("ReviewModeratedBy")
   courseReviews CourseReview[]
   moderatedCourseReviews CourseReview[] @relation("CourseReviewModeratedBy")
+
+  invitesCreated    UserInvite[] @relation("UserInviteCreatedBy")
+  invitesRegistered UserInvite[] @relation("UserInviteRegisteredUser")
 }
 
 model Category {
@@ -122,6 +126,7 @@ model Course {
   cartItems   CartItem[]
   materials   CourseMaterial[]
   courseReviews CourseReview[]
+  userInviteCourses UserInviteCourse[]
 
   @@index([categoryId])
   @@index([createdById])
@@ -454,4 +459,45 @@ model CourseReview {
   @@index([courseId, status, createdAt])
   @@index([status, createdAt])
   @@index([moderatedById])
+}
+
+model UserInvite {
+  id        Int      @id @default(autoincrement())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  createdById Int
+  createdAt   DateTime @default(now())
+
+  acceptedAt      DateTime?
+  declinedAt      DateTime?
+  registeredAt    DateTime?
+  accessGrantedAt DateTime?
+
+  registeredUserId Int?
+
+  mailMessageId String?
+  mailLastError String?
+
+  createdBy User @relation("UserInviteCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  registeredUser User? @relation("UserInviteRegisteredUser", fields: [registeredUserId], references: [id], onDelete: SetNull)
+
+  courses UserInviteCourse[]
+
+  @@index([email, createdAt])
+  @@index([expiresAt])
+  @@index([createdById])
+  @@index([registeredUserId])
+}
+
+model UserInviteCourse {
+  userInviteId Int
+  courseId     Int
+
+  userInvite UserInvite @relation(fields: [userInviteId], references: [id], onDelete: Cascade)
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([userInviteId, courseId])
+  @@index([courseId])
 }
