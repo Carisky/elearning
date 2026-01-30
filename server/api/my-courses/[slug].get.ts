@@ -1,6 +1,7 @@
 import { createError } from 'h3'
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/db'
+import { toEnrollmentAccessDto } from '../../utils/course-access'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -10,12 +11,62 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Course slug is required' })
   }
 
-  const course = await prisma.course.findUnique({
+  const courseBase = await prisma.course.findUnique({
     where: { slug },
+    select: { id: true, title: true, slug: true },
+  })
+
+  if (!courseBase) {
+    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId: user.id, courseId: courseBase.id } },
+    select: { id: true, activatedAt: true, expiresAt: true },
+  })
+
+  if (!enrollment) {
+    throw createError({ statusCode: 403, statusMessage: 'You are not enrolled in this course' })
+  }
+
+  const access = toEnrollmentAccessDto(enrollment)
+
+  const renewalOptions = await prisma.courseRenewalOption.findMany({
+    where: { courseId: courseBase.id, isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { durationDays: 'asc' }, { priceCents: 'asc' }, { id: 'asc' }],
     select: {
       id: true,
       title: true,
-      slug: true,
+      durationDays: true,
+      priceCents: true,
+      currency: true,
+    },
+  })
+
+  const progress = await prisma.userCourseProgress.findUnique({
+    where: { userId_courseId: { userId: user.id, courseId: courseBase.id } },
+    select: { progressPercent: true, finished: true, finishedAt: true, updatedAt: true },
+  })
+
+  if (access.isExpired) {
+    return {
+      locked: true,
+      lockedReason: 'EXPIRED' as const,
+      course: courseBase,
+      access,
+      renewalOptions,
+      progress: progress ?? { progressPercent: 0, finished: false, finishedAt: null, updatedAt: null },
+      completedItemIds: [] as number[],
+      latestAttemptsByItemId: {} as Record<string, never>,
+      materials: [] as any[],
+      myReview: null,
+      items: [] as any[],
+    }
+  }
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseBase.id },
+    select: {
       materials: {
         orderBy: [{ position: 'asc' }, { addedAt: 'asc' }],
         select: {
@@ -77,24 +128,11 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
-      progress: {
-        where: { userId: user.id },
-        select: { progressPercent: true, finished: true, finishedAt: true, updatedAt: true },
-      },
     },
   })
 
   if (!course) {
     throw createError({ statusCode: 404, statusMessage: 'Course not found' })
-  }
-
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId: user.id, courseId: course.id } },
-    select: { id: true },
-  })
-
-  if (!enrollment) {
-    throw createError({ statusCode: 403, statusMessage: 'You are not enrolled in this course' })
   }
 
   const itemIds = course.items.map((item) => item.id)
@@ -122,7 +160,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const myReview = await prisma.courseReview.findUnique({
-    where: { userId_courseId: { userId: user.id, courseId: course.id } },
+    where: { userId_courseId: { userId: user.id, courseId: courseBase.id } },
     select: {
       id: true,
       status: true,
@@ -136,11 +174,13 @@ export default defineEventHandler(async (event) => {
 
   return {
     course: {
-      id: course.id,
-      title: course.title,
-      slug: course.slug,
+      id: courseBase.id,
+      title: courseBase.title,
+      slug: courseBase.slug,
     },
-    progress: course.progress[0] ?? { progressPercent: 0, finished: false, finishedAt: null, updatedAt: null },
+    access,
+    renewalOptions,
+    progress: progress ?? { progressPercent: 0, finished: false, finishedAt: null, updatedAt: null },
     completedItemIds: Array.from(completedItemIds),
     latestAttemptsByItemId: Object.fromEntries(latestAttemptsByItemId.entries()),
     materials: course.materials.map((row) => ({

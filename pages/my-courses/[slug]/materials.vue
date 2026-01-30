@@ -20,6 +20,38 @@
         <v-card-text>
           <v-progress-linear v-if="pending" indeterminate color="primary" class="mb-4" />
 
+          <v-card v-else-if="isAccessLocked" variant="tonal" class="mb-4">
+            <v-card-text>
+              <v-alert v-if="payload?.access?.expiresAt" variant="tonal" type="warning" class="mb-4">
+                Dostęp do kursu wygasł (do: {{ formatDate(payload.access.expiresAt) }}).
+              </v-alert>
+
+              <v-alert v-if="renewError" variant="tonal" type="error" class="mb-4">
+                {{ renewError }}
+              </v-alert>
+
+              <div class="text-subtitle-1 font-weight-medium mb-2">Przedłuż dostęp</div>
+
+              <v-alert v-if="!payload?.renewalOptions?.length" variant="tonal" type="info" class="mb-4">
+                Brak dostępnych opcji przedłużenia.
+              </v-alert>
+
+              <div v-else class="d-flex flex-wrap gap-3">
+                <v-btn
+                  v-for="opt in payload.renewalOptions"
+                  :key="opt.id"
+                  color="primary"
+                  variant="flat"
+                  :loading="renewingOptionId === opt.id"
+                  :disabled="Boolean(renewingOptionId)"
+                  @click="renew(opt.id)"
+                >
+                  {{ opt.title || `${opt.durationDays} dni` }} • {{ formatMoneyByView(opt.priceCents, opt.currency) }}
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+
           <v-alert v-else-if="!orderedMaterials.length" variant="tonal" type="info">
             Brak materiałów dla tego kursu.
           </v-alert>
@@ -83,10 +115,32 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
 
+import { formatMoneyByView } from '~/utils/currency'
+
 type MaterialType = 'PDF' | 'VIDEO' | 'FILE'
 
+type EnrollmentAccess = {
+  activatedAt: string
+  expiresAt: string | null
+  isUnlimited: boolean
+  isExpired: boolean
+  isActive: boolean
+}
+
+type RenewalOption = {
+  id: number
+  title: string | null
+  durationDays: number
+  priceCents: number
+  currency: string
+}
+
 type CourseMaterialsPayload = {
+  locked?: boolean
+  lockedReason?: 'EXPIRED' | null
   course: { id: number; title: string; slug: string }
+  access: EnrollmentAccess
+  renewalOptions: RenewalOption[]
   materials: Array<{
     id: number
     title: string
@@ -106,6 +160,29 @@ const { data: payload, pending, error } = await useFetch<CourseMaterialsPayload>
   () => `/api/my-course-materials?slug=${encodeURIComponent(slug.value)}`,
   { key: () => `my-course-materials:${slug.value}` },
 )
+
+const isAccessLocked = computed(() => Boolean(payload.value?.locked) || Boolean(payload.value?.access?.isExpired))
+const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString('pl-PL') : '—')
+
+const renewingOptionId = ref<number | null>(null)
+const renewError = ref<string>('')
+const renew = async (optionId: number) => {
+  if (renewingOptionId.value) return
+  renewingOptionId.value = optionId
+  renewError.value = ''
+  try {
+    await $fetch(`/api/my-courses/${slug.value}/renew`, {
+      method: 'POST',
+      body: { optionId },
+    })
+    await refreshNuxtData(`my-course-materials:${slug.value}`)
+    await refreshNuxtData('my-courses')
+  } catch (e: any) {
+    renewError.value = e?.data?.message ?? e?.message ?? 'Nie udało się przedłużyć dostępu.'
+  } finally {
+    renewingOptionId.value = null
+  }
+}
 
 const orderedMaterials = computed(() => {
   const materials = payload.value?.materials ?? []

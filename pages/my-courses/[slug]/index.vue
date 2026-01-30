@@ -74,7 +74,39 @@
               {{ actionError }}
             </v-alert>
 
-            <v-alert v-if="!currentItem && !pending && !error" variant="tonal" type="info">
+            <v-alert v-if="isAccessLocked && payload?.access?.expiresAt" variant="tonal" type="warning" class="mb-4">
+              Dostęp do kursu wygasł (do: {{ formatDate(payload.access.expiresAt) }}).
+            </v-alert>
+
+            <v-card v-if="isAccessLocked" elevation="1" class="mb-6">
+              <v-card-text>
+                <v-alert v-if="renewError" variant="tonal" type="error" class="mb-4">
+                  {{ renewError }}
+                </v-alert>
+
+                <div class="text-subtitle-1 font-weight-medium mb-2">Przedłuż dostęp</div>
+
+                <v-alert v-if="!payload?.renewalOptions?.length" variant="tonal" type="info" class="mb-4">
+                  Brak dostępnych opcji przedłużenia.
+                </v-alert>
+
+                <div v-else class="d-flex flex-wrap gap-3">
+                  <v-btn
+                    v-for="opt in payload.renewalOptions"
+                    :key="opt.id"
+                    color="primary"
+                    variant="tonal"
+                    :loading="renewingOptionId === opt.id"
+                    :disabled="Boolean(renewingOptionId)"
+                    @click="renew(opt.id)"
+                  >
+                    {{ opt.title || `${opt.durationDays} dni` }} • {{ formatMoneyByView(opt.priceCents, opt.currency) }}
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
+
+            <v-alert v-if="!isAccessLocked && !currentItem && !pending && !error" variant="tonal" type="info">
               Brak materiałów w kursie.
             </v-alert>
 
@@ -215,13 +247,34 @@
 definePageMeta({ middleware: 'auth' })
 
 import RichTextViewer from '~/components/rich-text-viewer.vue'
+import { formatMoneyByView } from '~/utils/currency'
 
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
 type MaterialType = 'PDF' | 'VIDEO' | 'FILE'
 
+type EnrollmentAccess = {
+  activatedAt: string
+  expiresAt: string | null
+  isUnlimited: boolean
+  isExpired: boolean
+  isActive: boolean
+}
+
+type RenewalOption = {
+  id: number
+  title: string | null
+  durationDays: number
+  priceCents: number
+  currency: string
+}
+
 type MyCoursePayload = {
+  locked?: boolean
+  lockedReason?: 'EXPIRED' | null
   course: { id: number; title: string; slug: string }
+  access: EnrollmentAccess
+  renewalOptions: RenewalOption[]
   progress: { progressPercent: number; finished: boolean; finishedAt: string | null; updatedAt: string | null }
   completedItemIds: number[]
   latestAttemptsByItemId: Record<
@@ -281,6 +334,8 @@ const selectedItemId = ref<number | null>(null)
 const completedSet = computed(() => new Set(payload.value?.completedItemIds ?? []))
 const chapterContentEl = ref<HTMLElement | null>(null)
 
+const isAccessLocked = computed(() => Boolean(payload.value?.locked) || Boolean(payload.value?.access?.isExpired))
+
 const chapterReadPercentByItemId = reactive<Record<number, number>>({})
 
 const orderedItems = computed(() => {
@@ -294,6 +349,7 @@ const orderedMaterials = computed(() => {
 })
 
 const isUnlocked = (courseItemId: number) => {
+  if (isAccessLocked.value) return false
   if (isReadOnly.value) return true
   if (completedSet.value.has(courseItemId)) return true
 
@@ -332,7 +388,30 @@ const hasPassedExam = computed(() => {
   return items.some((item) => item.type === 'EXAM' && attempts[String(item.id)]?.passed)
 })
 
-const isReadOnly = computed(() => Boolean(payload.value?.progress?.finished) || hasPassedExam.value)
+const isReadOnly = computed(() => isAccessLocked.value || Boolean(payload.value?.progress?.finished) || hasPassedExam.value)
+
+const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString('pl-PL') : '—')
+
+const renewingOptionId = ref<number | null>(null)
+const renewError = ref<string>('')
+const renew = async (optionId: number) => {
+  if (renewingOptionId.value) return
+  renewingOptionId.value = optionId
+  renewError.value = ''
+  actionError.value = ''
+  try {
+    await $fetch(`/api/my-courses/${slug.value}/renew`, {
+      method: 'POST',
+      body: { optionId },
+    })
+    await refresh()
+    await refreshNuxtData('my-courses')
+  } catch (e: any) {
+    renewError.value = e?.data?.message ?? e?.message ?? 'Nie udało się przedłużyć dostępu.'
+  } finally {
+    renewingOptionId.value = null
+  }
+}
 
 const isEndOfCourse = computed(() => {
   const items = payload.value?.items ?? []

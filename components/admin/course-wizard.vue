@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import RichTextEditor from '~/components/rich-text-editor.vue'
 import type { SupportedCurrencyCode } from '~/utils/currency'
-import { currencyOptions, isSupportedCurrencyCode } from '~/utils/currency'
+import { currencyOptions, formatMoneyByView, isSupportedCurrencyCode } from '~/utils/currency'
 
 defineOptions({ name: 'CourseWizard' })
 
@@ -21,6 +21,7 @@ type Course = {
   status: CourseStatus
   priceCents: number
   currency: SupportedCurrencyCode
+  accessDurationDays?: number | null
   categoryId: number
   isFeatured: boolean
   previewImageUrl?: string | null
@@ -56,6 +57,16 @@ type CourseItem = {
 
 type AnswerForm = { text: string; isCorrect: boolean; position: number }
 type QuestionForm = { text: string; type: QuestionType; points: number; position: number; answers: AnswerForm[] }
+
+type RenewalOption = {
+  id: number
+  title: string | null
+  durationDays: number
+  priceCents: number
+  currency: SupportedCurrencyCode
+  isActive: boolean
+  sortOrder: number
+}
 
 const props = defineProps<{ courseId?: number }>()
 
@@ -116,6 +127,7 @@ const courseForm = reactive({
   categoryId: null as number | null,
   price: '0.00',
   currency: 'PLN' as SupportedCurrencyCode,
+  accessDurationDays: '',
   status: 'DRAFT' as CourseStatus,
   isFeatured: false,
   previewImageUrl: '',
@@ -192,6 +204,7 @@ const loadCourse = async () => {
     courseForm.categoryId = data.categoryId ?? null
     courseForm.price = (data.priceCents / 100).toFixed(2)
     courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
+    courseForm.accessDurationDays = data.accessDurationDays && data.accessDurationDays > 0 ? String(data.accessDurationDays) : ''
     courseForm.status = data.status ?? 'DRAFT'
     courseForm.isFeatured = Boolean((data as any).isFeatured)
     courseForm.previewImageUrl = data.previewImageUrl ?? ''
@@ -206,6 +219,124 @@ const loadCourse = async () => {
 }
 
 watch(internalCourseId, () => loadCourse(), { immediate: true })
+
+const renewalOptions = ref<RenewalOption[]>([])
+const renewalOptionsLoading = ref(false)
+const renewalOptionsSaving = ref(false)
+
+const loadRenewalOptions = async () => {
+  if (!internalCourseId.value) {
+    renewalOptions.value = []
+    return
+  }
+
+  renewalOptionsLoading.value = true
+  try {
+    renewalOptions.value = await $fetch<RenewalOption[]>(`/api/courses/${internalCourseId.value}/renewal-options`)
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się załadować opcji przedłużenia') }
+    renewalOptions.value = []
+  } finally {
+    renewalOptionsLoading.value = false
+  }
+}
+
+watch(internalCourseId, () => loadRenewalOptions(), { immediate: true })
+
+const orderedRenewalOptions = computed(() => {
+  const list = renewalOptions.value ?? []
+  return [...list].sort((a, b) => {
+    if ((a.sortOrder ?? 0) !== (b.sortOrder ?? 0)) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    if ((a.durationDays ?? 0) !== (b.durationDays ?? 0)) return (a.durationDays ?? 0) - (b.durationDays ?? 0)
+    if ((a.priceCents ?? 0) !== (b.priceCents ?? 0)) return (a.priceCents ?? 0) - (b.priceCents ?? 0)
+    return (a.id ?? 0) - (b.id ?? 0)
+  })
+})
+
+const renewalDialog = ref(false)
+const renewalEditingId = ref<number | null>(null)
+const renewalForm = reactive({
+  title: '',
+  durationDays: '',
+  price: '0.00',
+  isActive: true,
+  sortOrder: 0,
+})
+
+const openRenewalDialog = (option?: RenewalOption) => {
+  renewalEditingId.value = option?.id ?? null
+  renewalForm.title = option?.title ?? ''
+  renewalForm.durationDays = option ? String(option.durationDays ?? '') : ''
+  renewalForm.price = option ? ((option.priceCents ?? 0) / 100).toFixed(2) : '0.00'
+  renewalForm.isActive = option ? Boolean(option.isActive) : true
+  renewalForm.sortOrder = option?.sortOrder ?? 0
+  renewalDialog.value = true
+}
+
+const saveRenewalOption = async () => {
+  if (!internalCourseId.value) return
+
+  const durationDays = Math.floor(Number(renewalForm.durationDays))
+  if (!Number.isFinite(durationDays) || durationDays <= 0) {
+    notification.value = { type: 'error', message: 'Podaj liczbę dni (min. 1)' }
+    return
+  }
+
+  const priceCandidate = Number(renewalForm.price)
+  if (!Number.isFinite(priceCandidate) || priceCandidate < 0) {
+    notification.value = { type: 'error', message: 'Nieprawidłowa cena' }
+    return
+  }
+
+  renewalOptionsSaving.value = true
+  notification.value = null
+  try {
+    const payload = {
+      title: renewalForm.title.trim() || null,
+      durationDays,
+      price: priceCandidate,
+      isActive: renewalForm.isActive,
+      sortOrder: renewalForm.sortOrder,
+    }
+
+    if (renewalEditingId.value) {
+      await $fetch(`/api/courses/${internalCourseId.value}/renewal-options/${renewalEditingId.value}`, {
+        method: 'PUT',
+        body: payload,
+      })
+    } else {
+      await $fetch(`/api/courses/${internalCourseId.value}/renewal-options`, {
+        method: 'POST',
+        body: payload,
+      })
+    }
+
+    renewalDialog.value = false
+    await loadRenewalOptions()
+    notification.value = { type: 'success', message: 'Opcja została zapisana' }
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się zapisać opcji') }
+  } finally {
+    renewalOptionsSaving.value = false
+  }
+}
+
+const deleteRenewalOption = async (optionId: number) => {
+  if (!internalCourseId.value) return
+  if (!confirm('Usunąć opcję przedłużenia?')) return
+
+  renewalOptionsSaving.value = true
+  notification.value = null
+  try {
+    await $fetch(`/api/courses/${internalCourseId.value}/renewal-options/${optionId}`, { method: 'DELETE' })
+    await loadRenewalOptions()
+    notification.value = { type: 'success', message: 'Opcja została usunięta' }
+  } catch (e: any) {
+    notification.value = { type: 'error', message: errorMessage(e, 'Nie udało się usunąć opcji') }
+  } finally {
+    renewalOptionsSaving.value = false
+  }
+}
 
 const items = ref<CourseItem[]>([])
 const loadItems = async () => {
@@ -323,12 +454,15 @@ const canGoStructure = computed(() => Boolean(internalCourseId.value))
 const canGoContent = computed(() => Boolean(internalCourseId.value) && totalItems.value > 0)
 const canGoPublish = computed(() => Boolean(internalCourseId.value))
 
-const errorMessage = (e: any, fallback: string) =>
-  (e?.data?.message as string) ||
-  (e?.data?.statusMessage as string) ||
-  (e?.statusMessage as string) ||
-  (e?.message as string) ||
-  fallback
+function errorMessage(e: any, fallback: string) {
+  return (
+    (e?.data?.message as string) ||
+    (e?.data?.statusMessage as string) ||
+    (e?.statusMessage as string) ||
+    (e?.message as string) ||
+    fallback
+  )
+}
 
 const createCourse = async () => {
   if (!courseForm.title.trim()) {
@@ -350,6 +484,7 @@ const createCourse = async () => {
         categoryId: courseForm.categoryId,
         price: courseForm.price,
         currency: courseForm.currency,
+        accessDurationDays: courseForm.accessDurationDays.trim() ? Number(courseForm.accessDurationDays) : null,
         status: courseForm.status,
         isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
@@ -382,6 +517,7 @@ const saveCourse = async () => {
         categoryId: courseForm.categoryId,
         price: courseForm.price,
         currency: courseForm.currency,
+        accessDurationDays: courseForm.accessDurationDays.trim() ? Number(courseForm.accessDurationDays) : null,
         status: courseForm.status,
         isFeatured: courseForm.isFeatured,
         previewImageUrl: courseForm.previewImageUrl.trim() || null,
@@ -810,6 +946,95 @@ const saveSelectedContent = async () => {
                           />
                         </v-col>
                       </v-row>
+
+                      <v-row>
+                        <v-col cols="12" md="7">
+                          <v-text-field
+                            v-model="courseForm.accessDurationDays"
+                            label="Dostęp po zakupie (dni)"
+                            type="number"
+                            hint="Puste lub 0 = bez terminu"
+                            persistent-hint
+                            class="mb-3"
+                          />
+                        </v-col>
+                      </v-row>
+
+                      <div class="text-subtitle-1 font-weight-medium mb-3">Przedłużenia dostępu</div>
+                      <v-alert variant="tonal" type="info" class="mb-3">
+                        Dodaj opcje przedłużenia (np. 7 dni / 60 zł). Użytkownik zobaczy je w kursie po wygaśnięciu dostępu.
+                      </v-alert>
+
+                      <div class="d-flex flex-wrap gap-3 mb-3">
+                        <v-btn
+                          variant="tonal"
+                          prepend-icon="mdi-plus"
+                          :disabled="!internalCourseId || renewalOptionsSaving"
+                          @click="openRenewalDialog()"
+                        >
+                          Dodaj opcję
+                        </v-btn>
+                        <v-btn
+                          variant="text"
+                          prepend-icon="mdi-refresh"
+                          :loading="renewalOptionsLoading"
+                          :disabled="!internalCourseId || renewalOptionsSaving"
+                          @click="loadRenewalOptions()"
+                        >
+                          Odśwież
+                        </v-btn>
+                      </div>
+
+                      <v-progress-linear v-if="renewalOptionsLoading" indeterminate color="primary" class="mb-3" />
+
+                      <v-alert v-else-if="internalCourseId && !orderedRenewalOptions.length" variant="tonal" type="info" class="mb-3">
+                        Brak opcji przedłużenia.
+                      </v-alert>
+
+                      <v-table v-else-if="orderedRenewalOptions.length" density="compact" class="mb-3">
+                        <thead>
+                          <tr>
+                            <th class="text-left">Nazwa</th>
+                            <th class="text-left">Dni</th>
+                            <th class="text-left">Cena</th>
+                            <th class="text-left">Aktywna</th>
+                            <th class="text-left">Sort</th>
+                            <th class="text-left">Akcje</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="opt in orderedRenewalOptions" :key="opt.id">
+                            <td class="text-wrap">{{ opt.title || '—' }}</td>
+                            <td>{{ opt.durationDays }}</td>
+                            <td>{{ formatMoneyByView(opt.priceCents, opt.currency) }}</td>
+                            <td>
+                              <v-chip size="small" variant="tonal" :color="opt.isActive ? 'green' : 'grey'">
+                                {{ opt.isActive ? 'Tak' : 'Nie' }}
+                              </v-chip>
+                            </td>
+                            <td>{{ opt.sortOrder }}</td>
+                            <td>
+                              <div class="d-flex align-center gap-2">
+                                <v-btn
+                                  icon="mdi-pencil"
+                                  size="small"
+                                  variant="text"
+                                  :disabled="renewalOptionsSaving"
+                                  @click="openRenewalDialog(opt)"
+                                />
+                                <v-btn
+                                  icon="mdi-delete"
+                                  size="small"
+                                  variant="text"
+                                  color="red"
+                                  :disabled="renewalOptionsSaving"
+                                  @click="deleteRenewalOption(opt.id)"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </v-table>
 
                       <v-divider class="my-6" />
 
@@ -1304,6 +1529,46 @@ const saveSelectedContent = async () => {
           </v-stepper-window-item>
         </v-stepper-window>
       </v-stepper>
+
+      <v-dialog v-model="renewalDialog" max-width="640" width="100%">
+        <v-card>
+          <v-card-title>{{ renewalEditingId ? 'Edytuj opcję przedłużenia' : 'Dodaj opcję przedłużenia' }}</v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="saveRenewalOption">
+              <v-text-field v-model="renewalForm.title" label="Nazwa (opcjonalnie)" class="mb-3" />
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field v-model="renewalForm.durationDays" label="Liczba dni" type="number" class="mb-3" />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field v-model="renewalForm.price" label="Cena" type="number" class="mb-3" />
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field v-model="renewalForm.sortOrder" label="Sortowanie" type="number" class="mb-3" />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-switch v-model="renewalForm.isActive" inset label="Aktywna" class="mb-3" />
+                </v-col>
+              </v-row>
+
+              <div class="text-caption text-medium-emphasis mb-4">
+                Podgląd: {{ renewalForm.durationDays || '—' }} dni • {{ renewalForm.price || '0.00' }} {{ courseForm.currency }}
+              </div>
+
+              <div class="d-flex gap-3">
+                <v-btn color="primary" type="submit" :loading="renewalOptionsSaving" prepend-icon="mdi-content-save">
+                  Zapisz
+                </v-btn>
+                <v-btn variant="tonal" :disabled="renewalOptionsSaving" @click="renewalDialog = false">
+                  Anuluj
+                </v-btn>
+              </div>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
 
       <v-dialog v-model="addDialog" max-width="1200" width="100%" scrollable>
         <v-card>

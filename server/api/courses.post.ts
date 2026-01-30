@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
     categoryId: number
     price?: number | string
     currency?: string
+    accessDurationDays?: number | string | null
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
     isFeatured?: boolean
     previewImageUrl?: string | null
@@ -64,6 +65,18 @@ export default defineEventHandler(async (event) => {
   const programJson = normalizeDeltaPojo(body.programJson)
   const instructorJson = normalizeDeltaPojo(body.instructorJson)
 
+  const accessDurationDays = (() => {
+    if (body.accessDurationDays === undefined) return null
+    if (body.accessDurationDays === null) return null
+    const parsed = Number(body.accessDurationDays)
+    if (!Number.isFinite(parsed)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid accessDurationDays' })
+    }
+    const days = Math.floor(parsed)
+    if (days <= 0) return null
+    return days
+  })()
+
   const baseSlug = slug
   let course:
     | {
@@ -88,6 +101,7 @@ export default defineEventHandler(async (event) => {
           slug: candidate,
           priceCents,
           currency,
+          accessDurationDays,
           status,
           isFeatured: Boolean(body.isFeatured),
           previewImageUrl,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fetch } from '@nuxt/test-utils'
+import { prisma } from '../server/utils/db'
 
 type CookieJar = { cookie?: string }
 
@@ -155,6 +156,103 @@ describe('Minimal API flows', () => {
 
     const myCourses = await apiJson<Array<{ course: { id: number; title: string } }>>(userJar, '/api/my-courses')
     expect(myCourses.some((e) => e.course.id === course.id)).toBe(true)
+  })
+
+  it('access: timed course expires and user can renew', async () => {
+    // admin creates a published course with access duration and a renewal option
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_access')
+    await apiJson(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const category = await apiJson<{ id: number }>(adminJar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat ${Date.now()}` },
+    })
+
+    const course = await apiJson<{ id: number; slug: string }>(adminJar, '/api/courses', {
+      method: 'POST',
+      body: {
+        title: `Course ${Date.now()}`,
+        categoryId: category.id,
+        price: 10,
+        currency: 'PLN',
+        status: 'PUBLISHED',
+        accessDurationDays: 14,
+      },
+    })
+
+    const option = await apiJson<{ id: number; durationDays: number; priceCents: number }>(
+      adminJar,
+      `/api/courses/${course.id}/renewal-options`,
+      {
+        method: 'POST',
+        body: { title: '7 dni', durationDays: 7, price: 60, isActive: true, sortOrder: 0 },
+      }
+    )
+
+    // user buys it
+    const userJar: CookieJar = {}
+    const userEmail = randomEmail('buyer_access')
+    const user = await apiJson<{ id: number }>(userJar, '/api/register', {
+      method: 'POST',
+      body: { email: userEmail, password: 'pass12345' },
+    })
+
+    await apiJson(userJar, '/api/cart/items', {
+      method: 'POST',
+      body: { courseId: course.id },
+    })
+
+    await apiJson(userJar, '/api/checkout', {
+      method: 'POST',
+      body: { mode: 'cart', acceptedTerms: true },
+    })
+
+    const myCourses = await apiJson<Array<{ activatedAt: string; expiresAt: string | null; course: { id: number } }>>(
+      userJar,
+      '/api/my-courses'
+    )
+    const enrollment = myCourses.find((e) => e.course.id === course.id)
+    expect(enrollment).toBeTruthy()
+    expect(enrollment!.expiresAt).toBeTruthy()
+
+    const activatedAtMs = new Date(enrollment!.activatedAt).getTime()
+    const expiresAtMs = new Date(enrollment!.expiresAt!).getTime()
+    expect(expiresAtMs).toBeGreaterThan(activatedAtMs)
+
+    // simulate expiry
+    await prisma.enrollment.update({
+      where: { userId_courseId: { userId: user.id, courseId: course.id } },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    })
+
+    const locked = await apiJson<any>(userJar, `/api/my-courses/${course.slug}`)
+    expect(locked.locked).toBe(true)
+    expect(locked.lockedReason).toBe('EXPIRED')
+    expect(locked.access?.isExpired).toBe(true)
+
+    const renewed = await apiJson<{ ok: true; orderId: number; access: { isExpired: boolean; expiresAt: string | null } }>(
+      userJar,
+      `/api/my-courses/${course.slug}/renew`,
+      { method: 'POST', body: { optionId: option.id } }
+    )
+    expect(renewed.ok).toBe(true)
+    expect(renewed.access.isExpired).toBe(false)
+    expect(renewed.access.expiresAt).toBeTruthy()
+
+    const order = await prisma.order.findUnique({
+      where: { id: renewed.orderId },
+      select: { id: true, items: { select: { type: true, courseRenewalOptionId: true } } },
+    })
+    expect(order?.items?.[0]?.type).toBe('COURSE_RENEWAL')
+    expect(order?.items?.[0]?.courseRenewalOptionId).toBe(option.id)
+
+    const unlocked = await apiJson<any>(userJar, `/api/my-courses/${course.slug}`)
+    expect(unlocked.locked).toBeUndefined()
+    expect(unlocked.access?.isExpired).toBe(false)
   })
 
   it('invites: admin sends invite and user registers to get access', async () => {

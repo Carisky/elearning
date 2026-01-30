@@ -2,6 +2,7 @@ import { createError, readBody } from 'h3'
 import { requireAuth } from '../utils/auth'
 import { prisma } from '../utils/db'
 import { updateUserCourseProgress } from '../utils/progress'
+import { assertEnrollmentAccessActive } from '../utils/course-access'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -32,12 +33,14 @@ export default defineEventHandler(async (event) => {
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: courseItem.courseId } },
-    select: { id: true },
+    select: { id: true, expiresAt: true },
   })
 
   if (!enrollment) {
     throw createError({ statusCode: 403, statusMessage: 'You are not enrolled in this course' })
   }
+
+  assertEnrollmentAccessActive(enrollment)
 
   const clamped = Math.max(0, Math.min(100, Math.round(readPercentCandidate)))
 
@@ -68,4 +71,3 @@ export default defineEventHandler(async (event) => {
   const progress = await updateUserCourseProgress(user.id, courseItem.courseId)
   return { ok: true, readPercent: nextReadPercent, completed: shouldComplete, progress }
 })
-

@@ -37,6 +37,7 @@ export default defineEventHandler(async (event) => {
     categoryId?: number
     price?: number | string
     currency?: string
+    accessDurationDays?: number | string | null
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
     isFeatured?: boolean
     previewImageUrl?: string | null
@@ -65,6 +66,18 @@ export default defineEventHandler(async (event) => {
     const normalizedCurrency = normalizeCurrencyCode(body.currency)
     if (normalizedCurrency && isSupportedCurrencyCode(normalizedCurrency)) updateData.currency = normalizedCurrency
     else if (body.currency?.trim()) throw createError({ statusCode: 400, statusMessage: 'Unsupported currency' })
+  }
+  if (body.accessDurationDays !== undefined) {
+    if (body.accessDurationDays === null) {
+      updateData.accessDurationDays = null
+    } else {
+      const parsed = Number(body.accessDurationDays)
+      if (!Number.isFinite(parsed)) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid accessDurationDays' })
+      }
+      const days = Math.floor(parsed)
+      updateData.accessDurationDays = days <= 0 ? null : days
+    }
   }
   if (body.status) updateData.status = body.status
   if (body.isFeatured !== undefined) updateData.isFeatured = Boolean(body.isFeatured)

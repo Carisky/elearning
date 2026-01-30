@@ -2,6 +2,7 @@ import { readBody, createError } from 'h3'
 import { prisma } from '../utils/db'
 import { requireAuth } from '../utils/auth'
 import { getOrCreateCart } from '../utils/cart'
+import { computeExtendedEnrollmentExpiresAt, computeInitialEnrollmentExpiresAt } from '../utils/course-access'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -41,6 +42,7 @@ export default defineEventHandler(async (event) => {
       priceCents: true,
       currency: true,
       status: true,
+      accessDurationDays: true,
     },
   })
 
@@ -71,6 +73,7 @@ export default defineEventHandler(async (event) => {
       items: {
         create: courses.map((course) => ({
           courseId: course.id,
+          type: 'COURSE',
           priceCents: course.priceCents ?? 0,
           currency,
         })),
@@ -79,21 +82,42 @@ export default defineEventHandler(async (event) => {
     select: { id: true },
   })
 
+  const now = new Date()
+
   for (const course of courses) {
-    await prisma.enrollment.upsert({
+    const existing = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
           userId: user.id,
           courseId: course.id,
         },
       },
-      update: {},
-      create: {
-        userId: user.id,
-        courseId: course.id,
-        source: 'ORDER',
-      },
+      select: { id: true, expiresAt: true },
     })
+
+    if (!existing) {
+      const expiresAt = computeInitialEnrollmentExpiresAt(now, { accessDurationDays: course.accessDurationDays ?? null })
+      await prisma.enrollment.create({
+        data: {
+          userId: user.id,
+          courseId: course.id,
+          source: 'ORDER',
+          activatedAt: now,
+          expiresAt,
+        },
+        select: { id: true },
+      })
+      continue
+    }
+
+    if (course.accessDurationDays != null && course.accessDurationDays > 0 && existing.expiresAt !== null) {
+      const nextExpiresAt = computeExtendedEnrollmentExpiresAt(now, { expiresAt: existing.expiresAt }, course.accessDurationDays)
+      await prisma.enrollment.update({
+        where: { id: existing.id },
+        data: { expiresAt: nextExpiresAt },
+        select: { id: true },
+      })
+    }
   }
 
   if (shouldClearCart) {

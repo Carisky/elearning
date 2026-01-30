@@ -52,6 +52,7 @@ const parseRange = (rangeHeader: string, size: number): { start: number; end: nu
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
+  const now = new Date()
 
   const id = Number(event.context.params?.id)
   if (!Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid id' })
@@ -76,7 +77,14 @@ export default defineEventHandler(async (event) => {
     const access = await prisma.courseMaterial.findFirst({
       where: {
         materialId: id,
-        course: { enrollments: { some: { userId: user.id } } },
+        course: {
+          enrollments: {
+            some: {
+              userId: user.id,
+              OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+          },
+        },
       },
       select: { courseId: true },
     })
@@ -122,4 +130,3 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Length', String(size))
   return sendStream(event, createReadStream(absPath))
 })
-

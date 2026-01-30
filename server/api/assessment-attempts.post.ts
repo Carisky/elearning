@@ -2,6 +2,7 @@ import { createError, readBody } from 'h3'
 import { requireAuth } from '../utils/auth'
 import { prisma } from '../utils/db'
 import { updateUserCourseProgress } from '../utils/progress'
+import { assertEnrollmentAccessActive } from '../utils/course-access'
 
 type AnswerPayload = Record<string, number | number[] | string | null | undefined>
 
@@ -50,12 +51,14 @@ export default defineEventHandler(async (event) => {
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: courseItem.courseId } },
-    select: { id: true },
+    select: { id: true, expiresAt: true },
   })
 
   if (!enrollment) {
     throw createError({ statusCode: 403, statusMessage: 'You are not enrolled in this course' })
   }
+
+  assertEnrollmentAccessActive(enrollment)
 
   if (courseItem.type === 'EXAM') {
     const alreadyPassed = await prisma.assessmentAttempt.findFirst({

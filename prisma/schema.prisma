@@ -39,6 +39,11 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum OrderItemType {
+  COURSE
+  COURSE_RENEWAL
+}
+
 enum EnrollmentSource {
   ORDER
   MANUAL
@@ -105,6 +110,8 @@ model Course {
   slug       String       @unique
   priceCents Int          @default(0)
   currency   String       @default("PLN")
+  // How long the user has access after purchase (ORDER). Null = unlimited.
+  accessDurationDays Int?
   status     CourseStatus @default(DRAFT)
   isFeatured Boolean      @default(false)
   previewImageUrl String?
@@ -127,9 +134,31 @@ model Course {
   materials   CourseMaterial[]
   courseReviews CourseReview[]
   userInviteCourses UserInviteCourse[]
+  renewalOptions CourseRenewalOption[]
 
   @@index([categoryId])
   @@index([createdById])
+}
+
+model CourseRenewalOption {
+  id           Int      @id @default(autoincrement())
+  courseId     Int
+  title        String?
+  durationDays Int
+  priceCents   Int
+  currency     String   @default("PLN")
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  orderItems OrderItem[]
+  enrollmentRenewals EnrollmentRenewal[]
+
+  @@index([courseId, isActive, sortOrder])
 }
 
 model CourseItem {
@@ -224,6 +253,7 @@ model Order {
 
   user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items OrderItem[]
+  enrollmentRenewals EnrollmentRenewal[]
 
   @@index([userId, status])
 }
@@ -232,15 +262,19 @@ model OrderItem {
   id         Int    @id @default(autoincrement())
   orderId    Int
   courseId   Int
+  type       OrderItemType @default(COURSE)
+  courseRenewalOptionId Int?
   priceCents Int
   currency   String @default("PLN")
 
   order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  courseRenewalOption CourseRenewalOption? @relation(fields: [courseRenewalOptionId], references: [id], onDelete: SetNull)
 
   @@unique([orderId, courseId])
   @@index([orderId])
   @@index([courseId])
+  @@index([courseRenewalOptionId])
 }
 
 model Enrollment {
@@ -253,9 +287,31 @@ model Enrollment {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  renewals EnrollmentRenewal[]
 
   @@unique([userId, courseId])
   @@index([courseId])
+}
+
+model EnrollmentRenewal {
+  id           Int      @id @default(autoincrement())
+  enrollmentId Int
+  optionId     Int
+  orderId      Int?
+
+  addedDays         Int
+  previousExpiresAt DateTime?
+  newExpiresAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  option     CourseRenewalOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  order      Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([enrollmentId, createdAt])
+  @@index([optionId])
+  @@index([orderId])
 }
 
 model UserCourseProgress {
