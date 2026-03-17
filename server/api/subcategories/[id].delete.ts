@@ -5,22 +5,23 @@ import { requireAdmin } from '../../utils/auth'
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const { id } = event.context.params ?? {}
-  const categoryId = Number(id)
-  if (!Number.isFinite(categoryId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid category id' })
+  const subcategoryId = Number(id)
+  if (!Number.isFinite(subcategoryId)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid subcategory id' })
   }
 
   try {
-    await prisma.category.delete({ where: { id: categoryId } })
+    await prisma.subcategory.delete({ where: { id: subcategoryId } })
     return { ok: true }
   } catch (e: any) {
     const message = e?.message as string | undefined
     if (message?.includes('Foreign key constraint') || message?.includes('violates foreign key constraint')) {
       throw createError({
         statusCode: 409,
-        statusMessage: 'Cannot delete category with dependent records',
+        statusMessage: 'Cannot delete subcategory with courses attached',
       })
     }
     throw e
   }
 })
+

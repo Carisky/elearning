@@ -31,10 +31,30 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid course id' })
   }
 
+  const existing = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      id: true,
+      categoryId: true,
+      subcategoryId: true,
+      serviceFormId: true,
+      shortDescription: true,
+      hoursTotal: true,
+      status: true,
+    },
+  })
+  if (!existing) {
+    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
+  }
+
   const body = await readBody<{
     title?: string
     slug?: string
     categoryId?: number
+    subcategoryId?: number | null
+    serviceFormId?: number | null
+    shortDescription?: string | null
+    hoursTotal?: number | string | null
     price?: number | string
     currency?: string
     accessDurationDays?: number | string | null
@@ -55,7 +75,51 @@ export default defineEventHandler(async (event) => {
   } else if (body.title?.trim()) {
     // keep existing slug when user edits only title
   }
-  if (body.categoryId) updateData.categoryId = body.categoryId
+  if (body.categoryId !== undefined) {
+    const parsed = Number(body.categoryId)
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid categoryId' })
+    }
+    updateData.categoryId = parsed
+  }
+  if (body.subcategoryId !== undefined) {
+    if (body.subcategoryId === null) updateData.subcategoryId = null
+    else {
+      const parsed = Number(body.subcategoryId)
+      if (!Number.isFinite(parsed)) throw createError({ statusCode: 400, statusMessage: 'Invalid subcategoryId' })
+      updateData.subcategoryId = parsed
+    }
+  }
+  if (body.serviceFormId !== undefined) {
+    if (body.serviceFormId === null) updateData.serviceFormId = null
+    else {
+      const parsed = Number(body.serviceFormId)
+      if (!Number.isFinite(parsed)) throw createError({ statusCode: 400, statusMessage: 'Invalid serviceFormId' })
+      updateData.serviceFormId = parsed
+    }
+  }
+  if (body.shortDescription !== undefined) {
+    const next =
+      typeof body.shortDescription === 'string' && body.shortDescription.trim() ? body.shortDescription.trim() : null
+    if (next && next.length > 500) {
+      throw createError({ statusCode: 400, statusMessage: 'shortDescription is too long' })
+    }
+    updateData.shortDescription = next
+  }
+  if (body.hoursTotal !== undefined) {
+    if (body.hoursTotal === null) updateData.hoursTotal = null
+    else {
+      const parsed = Number(body.hoursTotal)
+      if (!Number.isFinite(parsed)) {
+        throw createError({ statusCode: 400, statusMessage: 'Invalid hoursTotal' })
+      }
+      const hours = Math.floor(parsed)
+      if (hours <= 0) {
+        throw createError({ statusCode: 400, statusMessage: 'hoursTotal must be greater than 0' })
+      }
+      updateData.hoursTotal = hours
+    }
+  }
   if (body.price !== undefined) {
     const priceCandidate = Number(body.price)
     updateData.priceCents = Number.isFinite(priceCandidate)
@@ -94,6 +158,48 @@ export default defineEventHandler(async (event) => {
   }
   if (body.instructorJson !== undefined) {
     updateData.instructorJson = normalizeDeltaPojo(body.instructorJson)
+  }
+
+  const nextCategoryId = (updateData.categoryId ?? existing.categoryId) as number
+  const nextSubcategoryId =
+    updateData.subcategoryId !== undefined ? (updateData.subcategoryId as number | null) : existing.subcategoryId
+  const nextServiceFormId =
+    updateData.serviceFormId !== undefined ? (updateData.serviceFormId as number | null) : existing.serviceFormId
+  const nextShortDescription =
+    updateData.shortDescription !== undefined ? (updateData.shortDescription as string | null) : existing.shortDescription
+  const nextHoursTotal = updateData.hoursTotal !== undefined ? (updateData.hoursTotal as number | null) : existing.hoursTotal
+  const nextStatus = (updateData.status ?? existing.status) as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+
+  if (nextSubcategoryId !== null) {
+    const ok = await prisma.subcategory.findFirst({
+      where: { id: nextSubcategoryId, categoryId: nextCategoryId },
+      select: { id: true },
+    })
+    if (!ok) {
+      throw createError({ statusCode: 400, statusMessage: 'Subcategory does not belong to category' })
+    }
+  }
+
+  if (nextServiceFormId !== null) {
+    const ok = await prisma.serviceForm.findUnique({ where: { id: nextServiceFormId }, select: { id: true } })
+    if (!ok) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid serviceFormId' })
+    }
+  }
+
+  if (nextStatus === 'PUBLISHED') {
+    if (!nextShortDescription) {
+      throw createError({ statusCode: 400, statusMessage: 'shortDescription is required for publishing' })
+    }
+    if (nextHoursTotal === null) {
+      throw createError({ statusCode: 400, statusMessage: 'hoursTotal is required for publishing' })
+    }
+    if (nextSubcategoryId === null) {
+      throw createError({ statusCode: 400, statusMessage: 'subcategoryId is required for publishing' })
+    }
+    if (nextServiceFormId === null) {
+      throw createError({ statusCode: 400, statusMessage: 'serviceFormId is required for publishing' })
+    }
   }
 
   if (!Object.keys(updateData).length) {

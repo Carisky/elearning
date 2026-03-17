@@ -8,6 +8,8 @@ defineOptions({ name: 'CourseWizard' })
 
 type Notification = { type: 'success' | 'error' | 'info'; message: string }
 type Category = { id: number; title: string }
+type Subcategory = { id: number; title: string; categoryId: number }
+type ServiceForm = { id: number; title: string }
 type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 type CourseItemType = 'CHAPTER' | 'QUIZ' | 'EXAM'
 type QuestionType = 'SINGLE' | 'MULTI' | 'TEXT'
@@ -19,6 +21,10 @@ type Course = {
   title: string
   slug: string
   status: CourseStatus
+  subcategoryId?: number | null
+  serviceFormId?: number | null
+  shortDescription?: string | null
+  hoursTotal?: number | null
   priceCents: number
   currency: SupportedCurrencyCode
   accessDurationDays?: number | null
@@ -109,6 +115,14 @@ const { data: categories } = useFetch<Category[]>('/api/categories' as any, { de
 const categoryList = computed(() => categories.value ?? [])
 
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
+const { data: subcategories } = useFetch<Subcategory[]>('/api/subcategories' as any, { default: () => [] })
+const subcategoryList = computed(() => subcategories.value ?? [])
+
+// Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
+const { data: serviceForms } = useFetch<ServiceForm[]>('/api/service-forms' as any, { default: () => [] })
+const serviceFormList = computed(() => serviceForms.value ?? [])
+
+// Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: materials, refresh: refreshMaterials } = useFetch<Material[]>('/api/materials' as any, {
   default: () => [],
 })
@@ -125,12 +139,22 @@ const courseForm = reactive({
   title: '',
   slug: '',
   categoryId: null as number | null,
+  subcategoryId: null as number | null,
+  serviceFormId: null as number | null,
+  shortDescription: '',
+  hoursTotal: '',
   price: '0.00',
   currency: 'PLN' as SupportedCurrencyCode,
   accessDurationDays: '',
   status: 'DRAFT' as CourseStatus,
   isFeatured: false,
   previewImageUrl: '',
+})
+
+const filteredSubcategoryList = computed(() => {
+  const categoryId = courseForm.categoryId
+  if (!categoryId) return []
+  return (subcategoryList.value ?? []).filter((s) => s.categoryId === categoryId)
 })
 
 const courseDescriptionDelta = ref<any | null>(null)
@@ -190,6 +214,30 @@ watch(
   { immediate: true },
 )
 
+watch(
+  [filteredSubcategoryList, () => courseForm.categoryId],
+  ([list]) => {
+    if (!list.length) {
+      courseForm.subcategoryId = null
+      return
+    }
+    const selected = courseForm.subcategoryId
+    if (!selected || !list.some((s) => s.id === selected)) {
+      courseForm.subcategoryId = list[0]!.id
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  serviceFormList,
+  (list) => {
+    if (!list.length) return
+    if (courseForm.serviceFormId === null) courseForm.serviceFormId = list[0]!.id
+  },
+  { immediate: true },
+)
+
 const loadCourse = async () => {
   if (!internalCourseId.value) {
     course.value = null
@@ -202,6 +250,10 @@ const loadCourse = async () => {
     courseForm.title = data.title ?? ''
     courseForm.slug = data.slug ?? ''
     courseForm.categoryId = data.categoryId ?? null
+    courseForm.subcategoryId = (data.subcategoryId ?? null) as number | null
+    courseForm.serviceFormId = (data.serviceFormId ?? null) as number | null
+    courseForm.shortDescription = (data.shortDescription ?? '') as string
+    courseForm.hoursTotal = data.hoursTotal && data.hoursTotal > 0 ? String(data.hoursTotal) : ''
     courseForm.price = (data.priceCents / 100).toFixed(2)
     courseForm.currency = isSupportedCurrencyCode(data.currency) ? data.currency : 'PLN'
     courseForm.accessDurationDays = data.accessDurationDays && data.accessDurationDays > 0 ? String(data.accessDurationDays) : ''
@@ -473,6 +525,24 @@ const createCourse = async () => {
     notification.value = { type: 'error', message: 'Wybierz kategorię' }
     return
   }
+  if (courseForm.status === 'PUBLISHED') {
+    if (!courseForm.shortDescription.trim()) {
+      notification.value = { type: 'error', message: 'Dodaj krótki opis (wymagany do publikacji)' }
+      return
+    }
+    if (!courseForm.subcategoryId) {
+      notification.value = { type: 'error', message: 'Wybierz podkategorię (wymagana do publikacji)' }
+      return
+    }
+    if (!courseForm.serviceFormId) {
+      notification.value = { type: 'error', message: 'Wybierz formę usługi (wymagana do publikacji)' }
+      return
+    }
+    if (!courseForm.hoursTotal.trim()) {
+      notification.value = { type: 'error', message: 'Podaj liczbę godzin (wymagana do publikacji)' }
+      return
+    }
+  }
   saving.value = true
   notification.value = null
   try {
@@ -482,6 +552,10 @@ const createCourse = async () => {
         title: courseForm.title.trim(),
         slug: courseForm.slug.trim() || slugify(courseForm.title),
         categoryId: courseForm.categoryId,
+        subcategoryId: courseForm.subcategoryId,
+        serviceFormId: courseForm.serviceFormId,
+        shortDescription: courseForm.shortDescription.trim() || null,
+        hoursTotal: courseForm.hoursTotal.trim() ? Number(courseForm.hoursTotal) : null,
         price: courseForm.price,
         currency: courseForm.currency,
         accessDurationDays: courseForm.accessDurationDays.trim() ? Number(courseForm.accessDurationDays) : null,
@@ -515,6 +589,10 @@ const saveCourse = async () => {
         title: courseForm.title.trim(),
         slug: courseForm.slug.trim(),
         categoryId: courseForm.categoryId,
+        subcategoryId: courseForm.subcategoryId,
+        serviceFormId: courseForm.serviceFormId,
+        shortDescription: courseForm.shortDescription.trim() || null,
+        hoursTotal: courseForm.hoursTotal.trim() ? Number(courseForm.hoursTotal) : null,
         price: courseForm.price,
         currency: courseForm.currency,
         accessDurationDays: courseForm.accessDurationDays.trim() ? Number(courseForm.accessDurationDays) : null,
@@ -922,6 +1000,52 @@ const saveSelectedContent = async () => {
                           <v-select v-model="courseForm.status" :items="statusOptions" label="Status" class="mb-3" />
                         </v-col>
                       </v-row>
+
+                      <v-textarea
+                        v-model="courseForm.shortDescription"
+                        label="Krótki opis"
+                        hint="Wymagany do publikacji (na liście kursów)"
+                        persistent-hint
+                        auto-grow
+                        rows="2"
+                        class="mb-3"
+                      />
+
+                      <v-row>
+                        <v-col cols="12" md="6">
+                          <v-select
+                            v-model="courseForm.subcategoryId"
+                            :items="filteredSubcategoryList"
+                            item-title="title"
+                            item-value="id"
+                            label="Podkategoria"
+                            hint="Wymagana do publikacji"
+                            persistent-hint
+                            class="mb-3"
+                          />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-select
+                            v-model="courseForm.serviceFormId"
+                            :items="serviceFormList"
+                            item-title="title"
+                            item-value="id"
+                            label="Forma usługi"
+                            hint="Wymagana do publikacji"
+                            persistent-hint
+                            class="mb-3"
+                          />
+                        </v-col>
+                      </v-row>
+
+                      <v-text-field
+                        v-model="courseForm.hoursTotal"
+                        label="Liczba godzin"
+                        type="number"
+                        hint="Wymagana do publikacji"
+                        persistent-hint
+                        class="mb-3"
+                      />
 
                       <v-switch
                         v-model="courseForm.isFeatured"

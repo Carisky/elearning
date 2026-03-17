@@ -1,0 +1,42 @@
+:root {
+  /* Core theme palette (Vuetify customTheme.colors) */
+--color-background: #F7F8FA;
+--color-surface: #FFFFFF;
+
+--color-primary: #8D004C;
+--color-secondary: #00A19B;
+
+/* INFO – turkus (naturalne, spójne) */
+--color-info: #00A19B;
+
+/* SUCCESS – ciemniejszy turkus (ten sam „rodzinny” kolor) */
+--color-success: #007F7A;
+
+/* WARNING – przygaszone bordo (zamiast pomarańczowego) */
+--color-warning: #A64D79;
+
+/* ERROR – mocniejsze bordo/czerwony zbliżony do primary */
+--color-error: #B0003A;
+
+/* TEKST */
+--color-on-background: #1A1A1A;
+--color-on-surface: #1A1A1A;
+--color-on-primary: #FFFFFF;
+--color-on-secondary: #FFFFFF;
+  /* Semantic aliases: background */
+  --bg-page: var(--color-background);
+  --bg-surface: var(--color-surface);
+
+  /* Semantic aliases: text */
+  --text-primary: var(--color-on-surface);
+  --text-on-brand: var(--color-on-primary);
+  --text-on-dark: var(--color-on-secondary);
+
+  /* Semantic aliases: buttons */
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-text: var(--color-on-primary);
+  --btn-secondary-bg: var(--color-secondary);
+  --btn-secondary-text: var(--color-on-secondary);
+  --btn-info-bg: var(--color-info);
+  --btn-info-text: var(--color-on-primary);
+}

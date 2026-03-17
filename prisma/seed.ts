@@ -268,6 +268,15 @@ const DEFAULT_PERSONAL_DATA_PAGE_CONTENT = {
   },
 } as const
 
+const slugify = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .substring(0, 128)
+
 const upsertCategory = async (prisma: PrismaClient, input: { slug: string; title: string; sortOrder?: number }) => {
   return prisma.category.upsert({
     where: { slug: input.slug },
@@ -276,6 +285,171 @@ const upsertCategory = async (prisma: PrismaClient, input: { slug: string; title
     select: { id: true, slug: true, title: true },
   })
 }
+
+const upsertSubcategory = async (
+  prisma: PrismaClient,
+  input: { slug: string; title: string; categoryId: number; sortOrder?: number }
+) => {
+  return prisma.subcategory.upsert({
+    where: { slug: input.slug },
+    update: { title: input.title, categoryId: input.categoryId, sortOrder: input.sortOrder ?? 0 },
+    create: { slug: input.slug, title: input.title, categoryId: input.categoryId, sortOrder: input.sortOrder ?? 0 },
+    select: { id: true, slug: true, title: true, categoryId: true },
+  })
+}
+
+const upsertServiceForm = async (prisma: PrismaClient, input: { slug: string; title: string; sortOrder?: number }) => {
+  return prisma.serviceForm.upsert({
+    where: { slug: input.slug },
+    update: { title: input.title, sortOrder: input.sortOrder ?? 0 },
+    create: { slug: input.slug, title: input.title, sortOrder: input.sortOrder ?? 0 },
+    select: { id: true, slug: true, title: true },
+  })
+}
+
+const DEFAULT_COURSE_CATEGORIES = [
+  {
+    title: 'Biznes',
+    subcategories: [
+      'Marketing',
+      'PR',
+      'Sprzedaż',
+      'Logistyka',
+      'Organizacja',
+      'Negocjacje',
+      'Zarządzanie zasobami ludzkimi',
+      'Zarządzanie przedsiębiorstwem',
+    ],
+  },
+  {
+    title: 'Ekologia i rolnictwo',
+    subcategories: ['Ochrona środowiska', 'Rolnictwo', 'Weterynaria'],
+  },
+  {
+    title: 'Finanse i bankowość',
+    subcategories: [
+      'Audyt',
+      'Rachunkowość/księgowość',
+      'Bankowość',
+      'Inwestycje',
+      'Podatki',
+      'Ubezpieczenia',
+      'Windykacja',
+      'Finanse i doradztwo finansowe',
+    ],
+  },
+  {
+    title: 'Informatyka i telekomunikacja',
+    subcategories: [
+      'Aplikacje biznesowe',
+      'Bezpieczeństwo IT',
+      'Internet',
+      'Obsługa komputera',
+      'Programowanie',
+      'Telekomunikacja',
+      'Administracja IT i systemy komputerowe',
+      'Projektowanie graficzne i wspomagane komputerowo',
+      'Bazy danych',
+    ],
+  },
+  {
+    title: 'Inne',
+    subcategories: ['Artystyczne', 'Turystyka i hotelarstwo', 'Gastronomia', 'Edukacja'],
+  },
+  {
+    title: 'Języki',
+    subcategories: [
+      'Angielski',
+      'Francuski',
+      'Hiszpański',
+      'Niemiecki',
+      'Rosyjski',
+      'Włoski',
+      'Języki europejskie',
+      'Pozostałe języki',
+    ],
+  },
+  {
+    title: 'Prawo i administracja',
+    subcategories: [
+      'Administracja publiczna',
+      'Prawo pozostałe',
+      'Prawo administracyjne',
+      'Prawo budowlane',
+      'Prawo handlowe',
+      'Prawo ogólne',
+      'Prawo pracy',
+      'Prawo Unii Europejskiej',
+      'Zamówienia publiczne',
+      'Ochrona informacji niejawnych',
+      'Organizacje pozarządowe (NGO)',
+      'Pomoc społeczna',
+    ],
+  },
+  {
+    title: 'Prawo jazdy',
+    subcategories: [
+      'Kurs prawa jazdy kat. A',
+      'Kurs prawa jazdy kat. A1',
+      'Kurs prawa jazdy kat. A2',
+      'Kurs prawa jazdy kat. B',
+      'Kurs prawa jazdy kat. B+E',
+      'Kurs prawa jazdy kat. B1',
+      'Kurs prawa jazdy kat. C',
+      'Kurs prawa jazdy kat. C+E',
+      'Kurs prawa jazdy kat. C1',
+      'Kurs prawa jazdy kat. C1+E',
+      'Kurs prawa jazdy kat. D',
+      'Kursy specjalistyczne',
+      'Kurs na instruktora/egzaminatora prawa jazdy',
+      'Kurs prawa jazdy kat. D+E',
+    ],
+  },
+  {
+    title: 'Styl życia',
+    subcategories: ['Dietetyka', 'Sport', 'Uroda'],
+  },
+  {
+    title: 'Techniczne',
+    subcategories: [
+      'Automatyka i robotyka',
+      'Geodezja i kartografia',
+      'Hydraulika',
+      'Papiernictwo i poligrafia',
+      'Elektronika i elektrotechnika',
+      'Inżynieria i metrologia',
+      'Mechanika i mechatronika',
+      'Metalurgia i spawalnictwo',
+      'Budownictwo i projektowanie',
+      'Energetyka i gazownictwo',
+      'Obsługa maszyn i urządzeń',
+      'Pozostałe techniczne',
+    ],
+  },
+  {
+    title: 'Transport i motoryzacja',
+    subcategories: ['Motoryzacja', 'Transport i logistyka'],
+  },
+  {
+    title: 'Zdrowie i medycyna',
+    subcategories: [
+      'Farmacja',
+      'Logopedia',
+      'Psychologia i rozwój osobisty',
+      'Medycyna',
+      'Medycyna estetyczna i kosmetologia',
+      'Optyka',
+      'Stomatologia',
+      'Zdrowie publiczne',
+    ],
+  },
+] as const
+
+const DEFAULT_SERVICE_FORMS = [
+  { slug: 'stacjonarna', title: 'Usługa stacjonarna', sortOrder: 1 },
+  { slug: 'zdalna-na-zywo', title: 'Usługa zdalna w czasie rzeczywistym', sortOrder: 2 },
+  { slug: 'e-learning', title: 'Usługa zdalna (e-learning)', sortOrder: 3 },
+] as const
 
 
 async function main() {
@@ -305,6 +479,29 @@ async function main() {
     },
     select: { id: true, email: true, role: true },
   })
+
+  for (let i = 0; i < DEFAULT_COURSE_CATEGORIES.length; i++) {
+    const categorySeed = DEFAULT_COURSE_CATEGORIES[i]!
+    const category = await upsertCategory(prisma, {
+      slug: slugify(categorySeed.title),
+      title: categorySeed.title,
+      sortOrder: i + 1,
+    })
+
+    for (let j = 0; j < categorySeed.subcategories.length; j++) {
+      const title = categorySeed.subcategories[j]!
+      await upsertSubcategory(prisma, {
+        slug: slugify(`${categorySeed.title}-${title}`),
+        title,
+        categoryId: category.id,
+        sortOrder: j + 1,
+      })
+    }
+  }
+
+  for (const form of DEFAULT_SERVICE_FORMS) {
+    await upsertServiceForm(prisma, form)
+  }
 
   await prisma.sitePage.upsert({
     where: { slug: 'home' },

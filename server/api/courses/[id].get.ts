@@ -14,6 +14,8 @@ export default defineEventHandler(async (event) => {
     where: { id: courseId },
     include: {
       category: { select: { id: true, title: true } },
+      subcategory: { select: { id: true, title: true, categoryId: true } },
+      serviceForm: { select: { id: true, title: true } },
     },
   })
 
@@ -23,4 +25,3 @@ export default defineEventHandler(async (event) => {
 
   return course
 })
-

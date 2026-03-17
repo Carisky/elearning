@@ -17,10 +17,14 @@ export default defineEventHandler(async (event) => {
       priceCents: true,
       currency: true,
       previewImageUrl: true,
+      shortDescription: true,
+      hoursTotal: true,
       descriptionJson: true,
       programJson: true,
       instructorJson: true,
       category: { select: { id: true, title: true } },
+      subcategory: { select: { id: true, title: true, categoryId: true } },
+      serviceForm: { select: { id: true, title: true } },
     },
   })
 

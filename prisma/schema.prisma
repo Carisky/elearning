@@ -100,18 +100,51 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  subcategories Subcategory[]
+  courses Course[]
+}
+
+model Subcategory {
+  id         Int    @id @default(autoincrement())
+  categoryId Int
+  title      String
+  slug       String @unique
+  sortOrder  Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  courses  Course[]
+
+  @@index([categoryId, sortOrder])
+}
+
+model ServiceForm {
+  id        Int    @id @default(autoincrement())
+  title     String
+  slug      String @unique
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   courses Course[]
 }
 
 model Course {
   id         Int          @id @default(autoincrement())
   categoryId Int
+  subcategoryId Int?
+  serviceFormId Int?
   title      String
+  shortDescription String?
   slug       String       @unique
   priceCents Int          @default(0)
   currency   String       @default("PLN")
   // How long the user has access after purchase (ORDER). Null = unlimited.
   accessDurationDays Int?
+  hoursTotal Int?
   status     CourseStatus @default(DRAFT)
   isFeatured Boolean      @default(false)
   previewImageUrl String?
@@ -124,6 +157,8 @@ model Course {
   updatedAt   DateTime @updatedAt
 
   category  Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  serviceForm ServiceForm? @relation(fields: [serviceFormId], references: [id], onDelete: SetNull)
   createdBy User     @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
 
   items       CourseItem[]
@@ -137,6 +172,8 @@ model Course {
   renewalOptions CourseRenewalOption[]
 
   @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([serviceFormId])
   @@index([createdById])
 }
 

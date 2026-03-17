@@ -29,6 +29,10 @@ export default defineEventHandler(async (event) => {
     title: string
     slug?: string
     categoryId: number
+    subcategoryId?: number | null
+    serviceFormId?: number | null
+    shortDescription?: string | null
+    hoursTotal?: number | string | null
     price?: number | string
     currency?: string
     accessDurationDays?: number | string | null
@@ -40,7 +44,8 @@ export default defineEventHandler(async (event) => {
     instructorJson?: any | null
   }>(event)
 
-  if (!body.title || !body.categoryId) {
+  const categoryId = Number(body.categoryId)
+  if (!body.title || !Number.isFinite(categoryId)) {
     throw createError({ statusCode: 400, statusMessage: 'Title and category are required' })
   }
 
@@ -58,6 +63,81 @@ export default defineEventHandler(async (event) => {
   }
   const currency = normalizedCurrency
   const status = body.status ?? 'DRAFT'
+
+  const shortDescription =
+    typeof body.shortDescription === 'string' && body.shortDescription.trim()
+      ? body.shortDescription.trim()
+      : null
+  if (shortDescription && shortDescription.length > 500) {
+    throw createError({ statusCode: 400, statusMessage: 'shortDescription is too long' })
+  }
+
+  const hoursTotal = (() => {
+    if (body.hoursTotal === undefined) return null
+    if (body.hoursTotal === null) return null
+    const parsed = Number(body.hoursTotal)
+    if (!Number.isFinite(parsed)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid hoursTotal' })
+    }
+    const hours = Math.floor(parsed)
+    if (hours <= 0) {
+      throw createError({ statusCode: 400, statusMessage: 'hoursTotal must be greater than 0' })
+    }
+    return hours
+  })()
+
+  const subcategoryId = (() => {
+    if (body.subcategoryId === undefined) return null
+    if (body.subcategoryId === null) return null
+    const parsed = Number(body.subcategoryId)
+    if (!Number.isFinite(parsed)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid subcategoryId' })
+    }
+    return parsed
+  })()
+
+  const serviceFormId = (() => {
+    if (body.serviceFormId === undefined) return null
+    if (body.serviceFormId === null) return null
+    const parsed = Number(body.serviceFormId)
+    if (!Number.isFinite(parsed)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid serviceFormId' })
+    }
+    return parsed
+  })()
+
+  if (subcategoryId !== null) {
+    const ok = await prisma.subcategory.findFirst({
+      where: { id: subcategoryId, categoryId },
+      select: { id: true },
+    })
+    if (!ok) {
+      throw createError({ statusCode: 400, statusMessage: 'Subcategory does not belong to category' })
+    }
+  }
+
+  if (serviceFormId !== null) {
+    const ok = await prisma.serviceForm.findUnique({ where: { id: serviceFormId }, select: { id: true } })
+    if (!ok) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid serviceFormId' })
+    }
+  }
+
+  if (status === 'PUBLISHED') {
+    if (!shortDescription) {
+      throw createError({ statusCode: 400, statusMessage: 'shortDescription is required for publishing' })
+    }
+    if (hoursTotal === null) {
+      throw createError({ statusCode: 400, statusMessage: 'hoursTotal is required for publishing' })
+    }
+    if (subcategoryId === null) {
+      throw createError({ statusCode: 400, statusMessage: 'subcategoryId is required for publishing' })
+    }
+    if (serviceFormId === null) {
+      throw createError({ statusCode: 400, statusMessage: 'serviceFormId is required for publishing' })
+    }
+  }
+
   const previewImageUrl = typeof body.previewImageUrl === 'string' && body.previewImageUrl.trim()
     ? body.previewImageUrl.trim()
     : null
@@ -96,12 +176,16 @@ export default defineEventHandler(async (event) => {
     try {
       course = await prisma.course.create({
         data: {
-          categoryId: body.categoryId,
+          categoryId,
+          subcategoryId,
+          serviceFormId,
           title: body.title.trim(),
+          shortDescription,
           slug: candidate,
           priceCents,
           currency,
           accessDurationDays,
+          hoursTotal,
           status,
           isFeatured: Boolean(body.isFeatured),
           previewImageUrl,

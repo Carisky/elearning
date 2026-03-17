@@ -11,6 +11,19 @@ export default defineEventHandler(async (event) => {
           title: true,
         },
       },
+      subcategory: {
+        select: {
+          id: true,
+          title: true,
+          categoryId: true,
+        },
+      },
+      serviceForm: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
       createdBy: {
         select: {
           id: true,

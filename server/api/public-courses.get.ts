@@ -27,6 +27,19 @@ export default defineEventHandler(async (event) => {
           title: true,
         },
       },
+      subcategory: {
+        select: {
+          id: true,
+          title: true,
+          categoryId: true,
+        },
+      },
+      serviceForm: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
     ...(limit ? { take: limit } : {}),
@@ -40,7 +53,11 @@ export default defineEventHandler(async (event) => {
     currency: course.currency,
     isFeatured: course.isFeatured,
     previewImageUrl: course.previewImageUrl,
-    descriptionText: deltaToPlainText(course.descriptionJson).slice(0, 220),
+    shortDescription: course.shortDescription,
+    hoursTotal: course.hoursTotal,
+    descriptionText: (course.shortDescription ?? deltaToPlainText(course.descriptionJson)).slice(0, 220),
     category: course.category,
+    subcategory: course.subcategory,
+    serviceForm: course.serviceForm,
   }))
 })

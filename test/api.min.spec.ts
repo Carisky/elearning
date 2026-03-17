@@ -83,6 +83,16 @@ describe('Minimal API flows', () => {
     expect(category.id).toBeTypeOf('number')
     expect(category.slug).toMatch(/[a-z0-9-]+/)
 
+    const subcategory = await apiJson<{ id: number; title: string }>(jar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number; title: string }>(jar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
     const course = await apiJson<{ id: number; title: string; status: string; priceCents: number; currency: string }>(
       jar,
       '/api/courses',
@@ -91,6 +101,10 @@ describe('Minimal API flows', () => {
         body: {
           title: `Course ${Date.now()}`,
           categoryId: category.id,
+          subcategoryId: subcategory.id,
+          serviceFormId: serviceForm.id,
+          shortDescription: 'Short description',
+          hoursTotal: 8,
           price: 10,
           currency: 'PLN',
           status: 'PUBLISHED',
@@ -109,6 +123,82 @@ describe('Minimal API flows', () => {
     expect(course.priceCents).toBe(1000)
   })
 
+  it('courses: publishing requires store metadata', async () => {
+    const jar: CookieJar = {}
+    const email = randomEmail('admin_publish_rules')
+
+    await apiJson(jar, '/api/register', {
+      method: 'POST',
+      body: { email, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const category = await apiJson<{ id: number }>(jar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat ${Date.now()}` },
+    })
+
+    let failed = false
+    try {
+      await apiJson(jar, '/api/courses', {
+        method: 'POST',
+        body: { title: `Course ${Date.now()}`, categoryId: category.id, status: 'PUBLISHED' },
+      })
+    } catch (e: any) {
+      failed = true
+      expect(String(e?.message ?? e)).toContain('HTTP 400')
+    }
+    expect(failed).toBe(true)
+  })
+
+  it('courses: subcategory must belong to category', async () => {
+    const jar: CookieJar = {}
+    const email = randomEmail('admin_subcat_rules')
+
+    await apiJson(jar, '/api/register', {
+      method: 'POST',
+      body: { email, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const categoryA = await apiJson<{ id: number }>(jar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat A ${Date.now()}` },
+    })
+    const categoryB = await apiJson<{ id: number }>(jar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat B ${Date.now()}` },
+    })
+
+    const subcategoryA = await apiJson<{ id: number }>(jar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: categoryA.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(jar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
+    let failed = false
+    try {
+      await apiJson(jar, '/api/courses', {
+        method: 'POST',
+        body: {
+          title: `Course ${Date.now()}`,
+          categoryId: categoryB.id,
+          subcategoryId: subcategoryA.id,
+          serviceFormId: serviceForm.id,
+          shortDescription: 'Short description',
+          hoursTotal: 1,
+          status: 'PUBLISHED',
+        },
+      })
+    } catch (e: any) {
+      failed = true
+      expect(String(e?.message ?? e)).toContain('HTTP 400')
+    }
+    expect(failed).toBe(true)
+  })
+
   it('purchase: user adds course to cart and checkout creates enrollment', async () => {
     // admin creates a published course
     const adminJar: CookieJar = {}
@@ -123,11 +213,25 @@ describe('Minimal API flows', () => {
       body: { title: `Cat ${Date.now()}` },
     })
 
+    const subcategory = await apiJson<{ id: number }>(adminJar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(adminJar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
     const course = await apiJson<{ id: number; title: string }>(adminJar, '/api/courses', {
       method: 'POST',
       body: {
         title: `Course ${Date.now()}`,
         categoryId: category.id,
+        subcategoryId: subcategory.id,
+        serviceFormId: serviceForm.id,
+        shortDescription: 'Short description',
+        hoursTotal: 12,
         price: 49.99,
         currency: 'PLN',
         status: 'PUBLISHED',
@@ -172,11 +276,25 @@ describe('Minimal API flows', () => {
       body: { title: `Cat ${Date.now()}` },
     })
 
+    const subcategory = await apiJson<{ id: number }>(adminJar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(adminJar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
     const course = await apiJson<{ id: number; slug: string }>(adminJar, '/api/courses', {
       method: 'POST',
       body: {
         title: `Course ${Date.now()}`,
         categoryId: category.id,
+        subcategoryId: subcategory.id,
+        serviceFormId: serviceForm.id,
+        shortDescription: 'Short description',
+        hoursTotal: 6,
         price: 10,
         currency: 'PLN',
         status: 'PUBLISHED',
@@ -268,11 +386,25 @@ describe('Minimal API flows', () => {
       body: { title: `Cat ${Date.now()}` },
     })
 
+    const subcategory = await apiJson<{ id: number }>(adminJar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(adminJar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
     const course = await apiJson<{ id: number; title: string }>(adminJar, '/api/courses', {
       method: 'POST',
       body: {
         title: `Course ${Date.now()}`,
         categoryId: category.id,
+        subcategoryId: subcategory.id,
+        serviceFormId: serviceForm.id,
+        shortDescription: 'Short description',
+        hoursTotal: 2,
         price: 0,
         currency: 'PLN',
         status: 'PUBLISHED',

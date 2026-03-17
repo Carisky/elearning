@@ -10,6 +10,18 @@ const sections = [
     path: '/admin/categories',
   },
   {
+    id: 'subcategories',
+    label: 'Podkategorie',
+    helper: 'Słownik podkategorii',
+    path: '/admin/subcategories',
+  },
+  {
+    id: 'service-forms',
+    label: 'Forma usługi',
+    helper: 'Słownik form (stacjonarna / zdalna)',
+    path: '/admin/service-forms',
+  },
+  {
     id: 'courses',
     label: 'Kursy',
     helper: 'Kreator: pola, rozdziały, testy/egzaminy',
@@ -174,4 +186,3 @@ const activeSection = computed(() =>
   max-width: none !important;
 }
 </style>
-
