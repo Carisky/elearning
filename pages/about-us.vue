@@ -284,8 +284,8 @@ useSeoMeta({
 <style scoped>
 .about-hero {
   background:
-    radial-gradient(900px circle at 20% 0%, rgba(255, 106, 61, 0.18), transparent 62%),
-    radial-gradient(900px circle at 100% 20%, rgba(37, 99, 235, 0.12), transparent 58%);
+    radial-gradient(900px circle at 20% 0%, rgba(var(--v-theme-primary), 0.18), transparent 62%),
+    radial-gradient(900px circle at 100% 20%, rgba(var(--v-theme-info), 0.12), transparent 58%);
 }
 
 .about-title {
@@ -352,7 +352,7 @@ useSeoMeta({
 .about-media__glow--one {
   width: 230px;
   height: 230px;
-  background: rgba(255, 106, 61, 0.35);
+  background: rgba(var(--v-theme-primary), 0.35);
   top: -10%;
   left: -12%;
 }
@@ -360,7 +360,7 @@ useSeoMeta({
 .about-media__glow--two {
   width: 280px;
   height: 280px;
-  background: rgba(37, 99, 235, 0.25);
+  background: rgba(var(--v-theme-info), 0.25);
   bottom: -12%;
   right: -10%;
 }
@@ -381,7 +381,7 @@ useSeoMeta({
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: rgba(255, 106, 61, 0.12);
+  background: rgba(var(--v-theme-primary), 0.12);
   color: rgb(var(--v-theme-primary));
 }
 
@@ -397,8 +397,8 @@ useSeoMeta({
 
 .about-cta {
   background:
-    radial-gradient(500px circle at 20% 0%, rgba(255, 106, 61, 0.2), transparent 60%),
-    radial-gradient(600px circle at 100% 30%, rgba(37, 99, 235, 0.14), transparent 55%),
+    radial-gradient(500px circle at 20% 0%, rgba(var(--v-theme-primary), 0.2), transparent 60%),
+    radial-gradient(600px circle at 100% 30%, rgba(var(--v-theme-info), 0.14), transparent 55%),
     rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(17, 24, 39, 0.06);
   box-shadow: 0 26px 90px rgba(17, 24, 39, 0.1);

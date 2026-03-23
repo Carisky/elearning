@@ -211,8 +211,8 @@ const copyEmail = async () => {
 <style scoped>
 .contact-hero {
   background:
-    radial-gradient(900px circle at 20% 0%, rgba(255, 106, 61, 0.18), transparent 62%),
-    radial-gradient(900px circle at 100% 20%, rgba(37, 99, 235, 0.12), transparent 58%);
+    radial-gradient(900px circle at 20% 0%, rgba(var(--v-theme-primary), 0.18), transparent 62%),
+    radial-gradient(900px circle at 100% 20%, rgba(var(--v-theme-info), 0.12), transparent 58%);
 }
 
 .contact-title {
@@ -256,7 +256,7 @@ const copyEmail = async () => {
 .contact-media__glow--one {
   width: 230px;
   height: 230px;
-  background: rgba(255, 106, 61, 0.35);
+  background: rgba(var(--v-theme-primary), 0.35);
   top: -10%;
   left: -12%;
 }
@@ -264,7 +264,7 @@ const copyEmail = async () => {
 .contact-media__glow--two {
   width: 280px;
   height: 280px;
-  background: rgba(37, 99, 235, 0.25);
+  background: rgba(var(--v-theme-info), 0.25);
   bottom: -12%;
   right: -10%;
 }
@@ -282,7 +282,7 @@ const copyEmail = async () => {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: rgba(255, 106, 61, 0.12);
+  background: rgba(var(--v-theme-primary), 0.12);
   color: rgb(var(--v-theme-primary));
 }
 

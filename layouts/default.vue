@@ -562,12 +562,12 @@ watch(
   background:
     radial-gradient(
       1200px circle at 20% 0%,
-      rgba(255, 106, 61, 0.18),
+      rgba(var(--v-theme-primary), 0.18),
       transparent 60%
     ),
     radial-gradient(
       900px circle at 100% 20%,
-      rgba(37, 99, 235, 0.12),
+      rgba(var(--v-theme-info), 0.12),
       transparent 55%
     ),
     linear-gradient(180deg, #ffffff 0%, rgb(var(--v-theme-background)) 55%);
@@ -624,7 +624,7 @@ watch(
     ),
     radial-gradient(
       520px circle at 90% 10%,
-      rgba(37, 99, 235, 0.14),
+      rgba(var(--v-theme-info), 0.14),
       transparent 60%
     ),
     linear-gradient(
