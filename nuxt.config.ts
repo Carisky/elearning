@@ -11,6 +11,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/theme-colors.css'],
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/logo.png' },
+      ],
+    },
+  },
 
   devServer: {
     port: resolvedPort,
