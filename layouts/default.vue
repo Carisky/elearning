@@ -14,7 +14,10 @@
         Panel Administratora
       </v-toolbar-title>
 
-      <NuxtLink v-else class="nav-brand ml-8" to="/"> <v-container>E-Learning</v-container> </NuxtLink>
+      <NuxtLink v-else class="nav-brand ml-8" to="/">
+        <img src="/logo.png" alt="Akademia TSL logo" class="nav-brand-logo" />
+        <span>Akademia TSL</span>
+      </NuxtLink>
       <v-spacer />
 
       <div class="d-none d-md-flex align-center">
@@ -697,12 +700,22 @@ watch(
 }
 
 .nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: rgb(var(--v-theme-on-background));
   text-decoration: none;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.95;
+}
+
+.nav-brand-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
 }
 
 .nav-brand:hover {
