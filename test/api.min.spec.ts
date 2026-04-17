@@ -456,4 +456,94 @@ describe('Minimal API flows', () => {
     const row = adminInvites.find((i) => i.id === invite.id)
     expect(row?.status).toBe('ACCESS_GRANTED')
   })
+
+  it('invites: admin must confirm resend for existing email and can delete invite', async () => {
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_invites_resend')
+    await apiJson(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const category = await apiJson<{ id: number }>(adminJar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat ${Date.now()}` },
+    })
+
+    const subcategory = await apiJson<{ id: number }>(adminJar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(adminJar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
+    const course = await apiJson<{ id: number }>(adminJar, '/api/courses', {
+      method: 'POST',
+      body: {
+        title: `Course ${Date.now()}`,
+        categoryId: category.id,
+        subcategoryId: subcategory.id,
+        serviceFormId: serviceForm.id,
+        shortDescription: 'Short description',
+        hoursTotal: 2,
+        price: 0,
+        currency: 'PLN',
+        status: 'PUBLISHED',
+      },
+    })
+
+    const invitedEmail = randomEmail('invited_resend')
+
+    const firstInvite = await apiJson<{ id: number; email: string; inviteLink: string }>(
+      adminJar,
+      '/api/admin/user-invites',
+      {
+        method: 'POST',
+        body: { email: invitedEmail, courseIds: [course.id] },
+      }
+    )
+
+    let resendBlocked = false
+    try {
+      await apiJson(adminJar, '/api/admin/user-invites', {
+        method: 'POST',
+        body: { email: invitedEmail, courseIds: [course.id] },
+      })
+    } catch (error: any) {
+      resendBlocked = true
+      expect(String(error?.message ?? error)).toContain('HTTP 409')
+      expect(String(error?.message ?? error)).toContain('Invite already exists for this email')
+    }
+    expect(resendBlocked).toBe(true)
+
+    const secondInvite = await apiJson<{ id: number; email: string; inviteLink: string }>(
+      adminJar,
+      '/api/admin/user-invites',
+      {
+        method: 'POST',
+        body: { email: invitedEmail, courseIds: [course.id], allowResend: true },
+      }
+    )
+
+    expect(secondInvite.id).not.toBe(firstInvite.id)
+    expect(secondInvite.email).toBe(invitedEmail.toLowerCase())
+    expect(secondInvite.inviteLink).toContain('/invite/')
+
+    const inviteRowsBeforeDelete = await apiJson<Array<{ id: number; status: string }>>(adminJar, '/api/admin/user-invites')
+    const firstRow = inviteRowsBeforeDelete.find((invite) => invite.id === firstInvite.id)
+    const secondRow = inviteRowsBeforeDelete.find((invite) => invite.id === secondInvite.id)
+    expect(firstRow?.status).toBe('EXPIRED')
+    expect(secondRow?.status).toBe('LINK_SENT')
+
+    const deleteResult = await apiJson<{ ok: boolean }>(adminJar, `/api/admin/user-invites/${secondInvite.id}`, {
+      method: 'DELETE',
+    })
+    expect(deleteResult.ok).toBe(true)
+
+    const inviteRowsAfterDelete = await apiJson<Array<{ id: number }>>(adminJar, '/api/admin/user-invites')
+    expect(inviteRowsAfterDelete.some((invite) => invite.id === secondInvite.id)).toBe(false)
+  })
 })

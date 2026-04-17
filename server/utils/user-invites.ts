@@ -24,6 +24,8 @@ export type UserInviteListItemDto = {
   courses: Array<{ id: number; title: string }>
 }
 
+export const INVITE_ALREADY_EXISTS_ERROR_CODE = 'INVITE_ALREADY_EXISTS'
+
 const normalizeEmail = (value: unknown): string => {
   if (typeof value !== 'string') {
     throw createError({ statusCode: 400, statusMessage: 'Invalid email' })
@@ -58,6 +60,8 @@ const normalizeCourseIds = (value: unknown): number[] => {
 
   return unique
 }
+
+const normalizeAllowResend = (value: unknown): boolean => value === true
 
 const getInviteExpiryHours = (): number => {
   const raw = process.env.INVITE_EXPIRES_HOURS
@@ -115,9 +119,13 @@ const assertInviteUsable = (invite: { expiresAt: Date; declinedAt: Date | null; 
 
 const toIso = (value: Date | null): string | null => (value ? value.toISOString() : null)
 
-export const createUserInvite = async (createdById: number, input: { email: unknown; courseIds: unknown }) => {
+export const createUserInvite = async (
+  createdById: number,
+  input: { email: unknown; courseIds: unknown; allowResend?: unknown },
+) => {
   const email = normalizeEmail(input.email)
   const courseIds = normalizeCourseIds(input.courseIds)
+  const allowResend = normalizeAllowResend(input.allowResend)
   const now = new Date()
 
   const existingUser = await prisma.user.findFirst({
@@ -133,20 +141,43 @@ export const createUserInvite = async (createdById: number, input: { email: unkn
     throw createError({ statusCode: 409, statusMessage: 'User already exists' })
   }
 
-  const existingInvite = await prisma.userInvite.findFirst({
+  const existingInvites = await prisma.userInvite.findMany({
     where: {
       email: {
         equals: email,
         mode: 'insensitive',
       },
-      declinedAt: null,
-      registeredUserId: null,
-      expiresAt: { gt: now },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      expiresAt: true,
+      declinedAt: true,
+      registeredUserId: true,
+    },
   })
-  if (existingInvite) {
-    throw createError({ statusCode: 409, statusMessage: 'Active invite already exists' })
+
+  if (existingInvites.length && !allowResend) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Invite already exists for this email',
+      data: {
+        code: INVITE_ALREADY_EXISTS_ERROR_CODE,
+        message: 'Invite already exists for this email',
+      },
+    })
+  }
+
+  if (allowResend && existingInvites.length) {
+    const activeInviteIds = existingInvites
+      .filter((invite) => !invite.declinedAt && !invite.registeredUserId && invite.expiresAt.getTime() > now.getTime())
+      .map((invite) => invite.id)
+
+    if (activeInviteIds.length) {
+      await prisma.userInvite.updateMany({
+        where: { id: { in: activeInviteIds } },
+        data: { expiresAt: now },
+      })
+    }
   }
 
   const courses = await prisma.course.findMany({
@@ -249,6 +280,24 @@ export const listUserInvitesForAdmin = async (): Promise<UserInviteListItemDto[]
     status: computeInviteStatus(invite),
     courses: invite.courses.map((c) => c.course),
   }))
+}
+
+export const deleteUserInviteForAdmin = async (inviteIdInput: unknown): Promise<{ ok: true }> => {
+  const inviteId = Number(inviteIdInput)
+  if (!Number.isFinite(inviteId)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid invite id' })
+  }
+
+  const invite = await prisma.userInvite.findUnique({
+    where: { id: inviteId },
+    select: { id: true },
+  })
+  if (!invite) {
+    throw createError({ statusCode: 404, statusMessage: 'Invite not found' })
+  }
+
+  await prisma.userInvite.delete({ where: { id: inviteId } })
+  return { ok: true }
 }
 
 export const previewInvite = async (token: string) => {
