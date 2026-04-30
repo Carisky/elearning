@@ -17,6 +17,7 @@
     "server:restart": "bash scripts/server.sh restart",
     "server:rebuild": "bash scripts/server.sh rebuild",
     "server:status": "bash scripts/server.sh status",
+    "get:certbot": "bash scripts/get-certbot.sh",
     "test": "vitest run",
     "test:watch": "vitest"
   },

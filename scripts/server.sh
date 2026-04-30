@@ -34,7 +34,7 @@ start_server() {
   fi
   (
     cd "$root_dir"
-    nohup node --env-file .env .output/server/index.mjs >> "$log_file" 2>&1 &
+    PORT="${PORT:-3344}" HOST="${HOST:-127.0.0.1}" nohup node --env-file .env .output/server/index.mjs >> "$log_file" 2>&1 &
     echo $! > "$pid_file"
   )
   echo "Started server with PID $(cat "$pid_file")"
