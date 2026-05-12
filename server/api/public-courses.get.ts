@@ -52,6 +52,7 @@ export default defineEventHandler(async (event) => {
     priceCents: course.priceCents,
     currency: course.currency,
     isFeatured: course.isFeatured,
+    createdAt: course.createdAt,
     previewImageUrl: course.previewImageUrl,
     shortDescription: course.shortDescription,
     hoursTotal: course.hoursTotal,

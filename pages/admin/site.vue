@@ -10,7 +10,7 @@ type LinkCta = { label: string; href: string }
 type HomeStat = { value: string; label: string }
 type FeatureCard = { icon: string; title: string; description: string }
 type PromoTile = { variant: 'light' | 'accent'; title: string; description: string; icon: string; href: string }
-type Banner = { title: string; subtitle?: string; imageUrl: string; href: string }
+type Banner = { title: string; subtitle?: string; imageUrl: string; imageAlt?: string; href: string }
 type Quote = { text: string; author?: string }
 type BestsellersSection = { title: string; subtitle?: string }
 type WhySection = { title: string; body: string }
@@ -37,6 +37,14 @@ type HomePageContent = {
 }
 
 type SitePageResponse = { slug: string; content: HomePageContent | null }
+type SiteImageType = 'hero' | 'banner'
+type SiteImageRow = {
+  id: string
+  type: SiteImageType
+  alt: string
+  imageUrl: string
+  file: File | File[] | null
+}
 
 const createDefaultHomeContent = (): HomePageContent => ({
   seo: {
@@ -132,6 +140,8 @@ const pushNotification = (payload: Notification) => {
 
 const form = reactive<HomePageContent>(createDefaultHomeContent())
 const saving = ref(false)
+const uploadingImage = ref(false)
+const imageRows = ref<SiteImageRow[]>([])
 
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: pageData, pending, refresh } = useFetch<SitePageResponse>('/api/site-pages/home' as any, {
@@ -144,6 +154,22 @@ watch(
     const content = value?.content ?? null
     const next = content ? content : createDefaultHomeContent()
     Object.assign(form, next)
+    imageRows.value = [
+      {
+        id: crypto.randomUUID(),
+        type: 'hero',
+        alt: next.hero.imageAlt ?? '',
+        imageUrl: next.hero.imageUrl,
+        file: null,
+      },
+      ...next.banners.map((banner) => ({
+        id: crypto.randomUUID(),
+        type: 'banner' as const,
+        alt: banner.imageAlt ?? banner.title ?? '',
+        imageUrl: banner.imageUrl,
+        file: null,
+      })),
+    ]
   },
   { immediate: true },
 )
@@ -158,12 +184,71 @@ const addPromo = () =>
   form.promoTiles.push({ variant: 'light', title: '', description: '', icon: 'mdi-arrow-top-right', href: '/' })
 const removePromo = (index: number) => form.promoTiles.splice(index, 1)
 
-const addBanner = () => form.banners.push({ title: '', subtitle: '', imageUrl: '/placeholders/banner-1.svg', href: '/' })
+const addBanner = () => {
+  form.banners.push({ title: '', subtitle: '', imageUrl: '/placeholders/banner-1.svg', imageAlt: '', href: '/' })
+  addImageRow('banner')
+}
 const removeBanner = (index: number) => form.banners.splice(index, 1)
+
+const addImageRow = (type: SiteImageType = 'banner') => {
+  imageRows.value.push({
+    id: crypto.randomUUID(),
+    type,
+    alt: '',
+    imageUrl: type === 'hero' ? form.hero.imageUrl : '/placeholders/banner-1.svg',
+    file: null,
+  })
+}
+
+const removeImageRow = (index: number) => {
+  imageRows.value.splice(index, 1)
+}
+
+const firstFile = (value: File | File[] | null) => Array.isArray(value) ? value[0] ?? null : value
+
+const uploadSiteImage = async (fileValue: File | File[] | null, applyUrl: (url: string) => void) => {
+  const file = firstFile(fileValue)
+  if (!file) return
+
+  uploadingImage.value = true
+  try {
+    const body = new FormData()
+    body.append('file', file)
+    const result = await $fetch<{ url: string }>('/api/uploads/site-image', { method: 'POST', body })
+    applyUrl(result.url)
+    pushNotification({ type: 'success', message: 'Obrazek został przesłany.' })
+  } catch (error: any) {
+    pushNotification({
+      type: 'error',
+      message: error?.data?.message ?? error?.message ?? 'Nie udało się przesłać obrazka.',
+    })
+  } finally {
+    uploadingImage.value = false
+  }
+}
+
+const syncImageRowsToForm = () => {
+  const heroRow = imageRows.value.find((row) => row.type === 'hero')
+  if (heroRow) {
+    form.hero.imageUrl = heroRow.imageUrl || form.hero.imageUrl
+    form.hero.imageAlt = heroRow.alt
+  }
+
+  const bannerRows = imageRows.value.filter((row) => row.type === 'banner')
+  bannerRows.forEach((row, index) => {
+    if (!form.banners[index]) {
+      form.banners.push({ title: '', subtitle: '', imageUrl: row.imageUrl, imageAlt: row.alt, href: '/courses' })
+      return
+    }
+    form.banners[index].imageUrl = row.imageUrl || form.banners[index].imageUrl
+    form.banners[index].imageAlt = row.alt
+  })
+}
 
 const save = async () => {
   saving.value = true
   try {
+    syncImageRowsToForm()
     await $fetch('/api/site-pages/home', { method: 'POST', body: { content: form } })
     await refresh()
     pushNotification({ type: 'success', message: 'Zapisano.' })
@@ -222,8 +307,51 @@ const save = async () => {
                   </v-col>
                 </v-row>
 
-                <v-text-field v-model="form.hero.imageUrl" label="URL obrazka hero" class="mb-3" />
-                <v-text-field v-model="form.hero.imageAlt" label="ALT obrazka hero" class="mb-6" />
+                <v-divider class="my-6" />
+
+                <h3 class="text-h6 mb-3 d-flex align-center justify-space-between">
+                  Obrazki
+                  <v-btn variant="text" prepend-icon="mdi-image-plus" @click="addImageRow()">Dodaj</v-btn>
+                </h3>
+                <v-alert variant="tonal" type="info" density="compact" class="mb-4">
+                  Wybierz typ obrazka, wpisz ALT i wgraj plik. Ścieżka pliku zapisuje się automatycznie.
+                </v-alert>
+                <v-row v-for="(image, idx) in imageRows" :key="image.id" class="mb-3">
+                  <v-col cols="12" md="2">
+                    <v-select
+                      v-model="image.type"
+                      :items="[
+                        { title: 'Główna', value: 'hero' },
+                        { title: 'Baner', value: 'banner' },
+                      ]"
+                      item-title="title"
+                      item-value="value"
+                      label="Typ"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field v-model="image.alt" label="ALT tekst" />
+                  </v-col>
+                  <v-col cols="12" md="5">
+                    <v-file-input
+                      v-model="image.file"
+                      accept="image/*"
+                      label="Wgraj obrazek"
+                      prepend-icon="mdi-image-plus"
+                      variant="outlined"
+                      :loading="uploadingImage"
+                      @update:model-value="(value) => uploadSiteImage(value, (url) => image.imageUrl = url)"
+                    />
+                  </v-col>
+                  <v-col cols="10" md="1" class="d-flex align-center">
+                    <v-img v-if="image.imageUrl" :src="image.imageUrl" width="64" height="48" cover rounded />
+                  </v-col>
+                  <v-col cols="2" md="1" class="d-flex align-center justify-end">
+                    <v-btn icon variant="text" @click="removeImageRow(idx)">
+                      <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
 
                 <h3 class="text-h6 mb-3">Cytat</h3>
                 <v-textarea v-model="form.quote.text" label="Treść cytatu" rows="2" class="mb-3" />
@@ -317,10 +445,7 @@ const save = async () => {
                   <v-col cols="12" md="3">
                     <v-text-field v-model="item.subtitle" label="Podtytuł" />
                   </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field v-model="item.imageUrl" label="URL obrazka" />
-                  </v-col>
-                  <v-col cols="12" md="2">
+                  <v-col cols="12" md="5">
                     <v-text-field v-model="item.href" label="Link" />
                   </v-col>
                   <v-col cols="12" md="1" class="d-flex align-center justify-end">

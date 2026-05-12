@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -53,10 +53,15 @@ export default async () => {
   process.env.STORAGE = process.env.STORAGE || path.join(rootDir, '.storage-test')
   process.env.MAIL_TRANSPORT = 'noop'
 
-  execSync('npx prisma migrate deploy --config prisma.config.ts', {
+  execFileSync(process.execPath, [
+    path.join(rootDir, 'node_modules/prisma/build/index.js'),
+    'migrate',
+    'deploy',
+    '--config',
+    'prisma.config.ts',
+  ], {
     cwd: rootDir,
     stdio: 'inherit',
-    shell: true,
     env: {
       ...process.env,
       DATABASE_URL: testDbUrl,

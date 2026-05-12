@@ -1,41 +1,49 @@
 <script setup lang="ts">
 const year = new Date().getFullYear()
+
+const companyRows = [
+  { icon: 'mdi-office-building-outline', label: 'Firma', text: 'TSL Silesia Group Sp. z o.o.' },
+  { icon: 'mdi-map-marker-outline', label: 'Adres', text: 'ul. Rycerska 9, 41-902 Bytom, Śląskie, Polska' },
+  { icon: 'mdi-phone-outline', label: 'Telefon', text: '+48 32 282 90 62, +48 32 281 34 02' },
+  { icon: 'mdi-email-outline', label: 'Email', text: 'office@tsl-group.pl' },
+  { icon: 'mdi-scale-balance', label: 'KRS', text: '0000397243 - VIII Wydz. Gosp. w Katowicach' },
+  { icon: 'mdi-cash', label: 'Kapitał zakładowy', text: '6 000 PLN' },
+  { icon: 'mdi-percent-outline', label: 'NIP', text: 'PL6263004731' },
+  { icon: 'mdi-percent-outline', label: 'REGON', text: '242741335' },
+]
 </script>
 
 <template>
   <v-footer class="site-footer" color="transparent">
-    <v-container class="py-6">
-      <v-row align="center" justify="space-between" class="ga-3">
-        <v-col cols="12" md="6" class="text-body-2 text-medium-emphasis">
-          © {{ year }} E‑Learning
-        </v-col>
-        <v-col cols="12" md="6" class="d-flex justify-start justify-md-end ga-4">
+    <div class="site-footer__inner">
+      <div class="site-footer__top">
+        <div>
+          <div class="site-footer__brand">Akademia TSL</div>
+          <div class="site-footer__description">
+            TSL Silesia Group - Centrum Kompetencji, Edukacji i Rozwoju Kadr TSL.
+          </div>
+          <div class="site-footer__copyright">
+            © {{ year }} Akademia TSL / TSL Silesia Group
+          </div>
+        </div>
+
+        <nav class="site-footer__links" aria-label="Stopka">
           <NuxtLink to="/about-us" class="site-footer__link">O nas</NuxtLink>
           <NuxtLink to="/contact-us" class="site-footer__link">Kontakt</NuxtLink>
           <NuxtLink to="/warunki-zakupu" class="site-footer__link">Warunki zakupu</NuxtLink>
           <NuxtLink to="/dane-osobowe" class="site-footer__link">Dane osobowe</NuxtLink>
-        </v-col>
-      </v-row>
-    </v-container>
+        </nav>
+      </div>
+
+      <div class="site-footer__company-grid">
+        <div v-for="row in companyRows" :key="row.text" class="site-footer__company-row">
+          <v-icon :icon="row.icon" color="primary" size="22" class="site-footer__company-icon" />
+          <span>
+            <span class="site-footer__company-label">{{ row.label }}</span>
+            <span class="site-footer__company-value">{{ row.text }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
   </v-footer>
 </template>
-
-<style scoped>
-.site-footer {
-  border-top: 1px solid rgba(17, 24, 39, 0.06);
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.site-footer__link {
-  color: rgb(var(--v-theme-on-background));
-  text-decoration: none;
-  opacity: 0.85;
-}
-
-.site-footer__link:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
-</style>

@@ -4,6 +4,12 @@ import { useRoute } from '#app'
 
 const sections = [
   {
+    id: 'dashboard',
+    label: 'Statystyki',
+    helper: 'Przegląd platformy',
+    path: '/admin',
+  },
+  {
     id: 'categories',
     label: 'Kategorie',
     helper: 'Tworzenie, edycja, sortowanie',
@@ -26,6 +32,12 @@ const sections = [
     label: 'Kursy',
     helper: 'Kreator: pola, rozdziały, testy/egzaminy',
     path: '/admin/courses',
+  },
+  {
+    id: 'users',
+    label: 'Użytkownicy',
+    helper: 'Konta, role i dostępy',
+    path: '/admin/users',
   },
   {
     id: 'user-invites',
@@ -85,7 +97,11 @@ const sections = [
 
 const route = useRoute()
 const activeSection = computed(() =>
-  sections.find((section) => route.path.startsWith(section.path))?.id ?? sections[0].id
+  sections.find((section) =>
+    section.path === '/admin'
+      ? route.path === '/admin'
+      : route.path.startsWith(section.path)
+  )?.id ?? sections[0].id
 )
 </script>
 

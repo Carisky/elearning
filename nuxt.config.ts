@@ -10,7 +10,12 @@ const resolvedHost = (process.env.HOST ?? process.env.NUXT_HOST ?? '0.0.0.0').to
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/theme-colors.css'],
+  css: [
+    'vuetify/styles',
+    '@mdi/font/css/materialdesignicons.css',
+    '~/theme-colors.css',
+    '~/assets/css/app.css',
+  ],
   app: {
     head: {
       link: [

@@ -45,15 +45,13 @@
               <v-icon>mdi-cart</v-icon>
             </v-badge>
           </v-btn>
+
           <template v-if="me">
-            <v-btn text @click="handleLogout">Wyloguj</v-btn>
+            <v-btn color="primary" variant="flat" text @click="handleLogout">Wyloguj</v-btn>
           </template>
           <template v-else>
-            <v-btn text class="me-2" @click="openLogin">Zaloguj</v-btn>
+            <v-btn color="primary" variant="flat" text class="me-2" @click="openLogin()">Zaloguj</v-btn>
           </template>
-          <v-btn color="primary" variant="flat" class="ms-2" to="/courses">
-            Get started
-          </v-btn>
         </template>
       </div>
     </v-app-bar>
@@ -115,7 +113,7 @@
           </template>
           <template v-else>
             <v-list-item>
-              <v-btn text class="mobile-nav-action" block @click="openLogin">
+              <v-btn text class="mobile-nav-action" block @click="openLogin()">
                 Zaloguj
               </v-btn>
             </v-list-item>
@@ -130,10 +128,10 @@
 
     <SiteFooter v-if="!isAdminRoute" />
 
-    <v-dialog v-if="!me" v-model="loginDialog"  max-width="960" persistent>
+    <v-dialog v-if="!me" v-model="loginDialog" max-width="560">
       <v-card class="auth-card pa-6">
         <v-row no-gutters>
-          <v-col cols="12" md="6" class="auth-panel">
+          <v-col cols="12" class="auth-panel">
             <div class="auth-header">
               <v-avatar size="40" color="grey-lighten-2" />
               <v-btn icon variant="text" class="auth-close" @click="closeLogin">
@@ -276,46 +274,6 @@
             </v-form>
           </v-col>
 
-          <v-col cols="12" md="6" class="auth-illustration d-none d-md-flex">
-            <div class="auth-illustration-inner">
-              <svg viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="85" cy="78" r="12" stroke="currentColor" stroke-width="3" opacity="0.75" />
-                <circle cx="344" cy="84" r="10" stroke="currentColor" stroke-width="3" opacity="0.5" />
-                <circle cx="320" cy="260" r="10" stroke="currentColor" stroke-width="3" opacity="0.5" />
-                <path
-                  d="M122 216 L196 78 L318 128 L282 258 Z"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  opacity="0.75"
-                />
-                <path
-                  d="M164 246 L106 150 L244 116 L344 206 Z"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  opacity="0.75"
-                />
-                <path d="M250 138 L250 250" stroke="currentColor" stroke-width="3" opacity="0.6" />
-                <path
-                  d="M270 206 C280 196, 292 196, 302 206"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  opacity="0.6"
-                />
-                <path
-                  d="M268 220 C280 210, 292 210, 304 220"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  opacity="0.35"
-                />
-                <g opacity="0.75" fill="currentColor">
-                  <rect x="96" y="262" width="12" height="12" rx="3" />
-                  <rect x="114" y="262" width="12" height="12" rx="3" />
-                  <rect x="132" y="262" width="12" height="12" rx="3" />
-                  <rect x="150" y="262" width="12" height="12" rx="3" />
-                </g>
-              </svg>
-            </div>
-          </v-col>
         </v-row>
       </v-card>
     </v-dialog>
@@ -387,7 +345,7 @@ const setAuthMode = (mode: "login" | "register") => {
 
 const openLogin = (mode: "login" | "register" = "login") => {
   closeNav();
-  setAuthMode(mode);
+  setAuthMode(mode === "register" ? "register" : "login");
   loginDialog.value = true;
 };
 
@@ -614,39 +572,6 @@ watch(
 .auth-submit {
   min-width: 220px;
   height: 44px;
-}
-
-.auth-illustration {
-  position: relative;
-  color: rgba(17, 24, 39, 0.82);
-  background:
-    radial-gradient(
-      420px circle at 20% 20%,
-      rgba(var(--v-theme-primary), 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      520px circle at 90% 10%,
-      rgba(var(--v-theme-info), 0.14),
-      transparent 60%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.85),
-      rgba(255, 255, 255, 0.65)
-    );
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-}
-
-.auth-illustration-inner {
-  width: min(360px, 100%);
-}
-
-.auth-illustration svg {
-  width: 100%;
-  height: auto;
 }
 
 @media (max-width: 960px) {

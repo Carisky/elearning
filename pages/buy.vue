@@ -1,77 +1,132 @@
 <template>
-  <section class="pa-6">
-    <div class="d-flex align-center justify-space-between flex-wrap mb-6">
-      <h1 class="text-h4 font-weight-medium">Zakup</h1>
-      <v-btn variant="text" to="/courses">Wróć do kursów</v-btn>
-    </div>
-
-    <v-alert v-if="checkoutError" variant="tonal" type="error" class="mb-6">
-      {{ checkoutError }}
-    </v-alert>
-
-    <v-alert v-if="isFastBuy" variant="tonal" type="info" class="mb-6">
-      Tryb szybkiego zakupu (1 klik).
-    </v-alert>
-
-    <v-alert v-if="!me" variant="tonal" type="warning" class="mb-6">
-      Przed zakupem wymagane jest logowanie / rejestracja.
-      <div class="mt-3">
-        <v-btn color="primary" @click="goToLogin">Zaloguj / Zarejestruj</v-btn>
-      </div>
-    </v-alert>
-
-    <v-card v-if="items.length" elevation="2">
-      <v-card-title>Koszyk</v-card-title>
-      <v-divider />
-      <v-list>
-        <v-list-item v-for="item in items" :key="item.id">
-          <v-list-item-title class="text-wrap">{{ item.title }}</v-list-item-title>
-          <v-list-item-subtitle class="text-wrap">
-            {{ item.category?.title ?? 'Bez kategorii' }}
-          </v-list-item-subtitle>
-          <template #append>
-            <div class="d-flex align-center ga-3">
-              <div class="font-weight-medium">{{ formatMoney(item.priceCents, item.currency) }}</div>
-              <v-btn
-                v-if="!isFastBuy"
-                size="small"
-                variant="text"
-                color="error"
-                @click="remove(item.id)"
-              >
-                Usuń
-              </v-btn>
-            </div>
-          </template>
-        </v-list-item>
-      </v-list>
-      <v-divider />
-      <v-card-text class="pb-0">
-        <v-checkbox v-model="acceptedTerms" :disabled="checkoutLoading" hide-details density="compact">
-          <template #label>
-            <span>
-              Przeczytałem(-am) i akceptuję
-              <NuxtLink to="/warunki-zakupu" class="terms-link">warunki zakupu</NuxtLink>.
-            </span>
-          </template>
-        </v-checkbox>
-      </v-card-text>
-      <v-card-actions class="d-flex flex-wrap justify-space-between ga-3">
-        <div class="text-h6">Razem: {{ formatMoney(totalCents, currency) }}</div>
-        <div class="d-flex flex-wrap ga-2">
-          <v-btn v-if="!isFastBuy" variant="text" color="error" @click="clear" :disabled="checkoutLoading">
-            Wyczyść koszyk
-          </v-btn>
-          <v-btn color="primary" :loading="checkoutLoading" :disabled="!items.length || !acceptedTerms" @click="checkout">
-            Kup teraz
-          </v-btn>
+  <section class="buy-page">
+    <div class="buy-page__inner">
+      <div class="buy-page__header">
+        <div>
+          <h1 class="buy-page__title">Zakup</h1>
+          <div class="buy-page__subtitle">Sprawdź koszyk i potwierdź zakup kursu.</div>
         </div>
-      </v-card-actions>
-    </v-card>
+        <v-btn variant="text" prepend-icon="mdi-arrow-left" to="/courses">Wróć do kursów</v-btn>
+      </div>
 
-    <v-alert v-else variant="tonal" type="info">
-      {{ isFastBuy ? 'Nie znaleziono kursu do szybkiego zakupu.' : 'Koszyk jest pusty.' }}
-    </v-alert>
+      <v-alert v-if="checkoutError" variant="tonal" type="error" class="buy-page__notice">
+        {{ checkoutError }}
+      </v-alert>
+
+      <v-alert v-if="isFastBuy" variant="tonal" type="info" class="buy-page__notice">
+        Tryb szybkiego zakupu (1 klik).
+      </v-alert>
+
+      <v-alert v-if="!me" variant="tonal" type="warning" class="buy-page__notice">
+        <div class="buy-login-alert">
+          <div>
+            <div class="buy-login-alert__title">Przed zakupem wymagane jest logowanie.</div>
+            <div class="text-body-2">Zaloguj się, aby kontynuować zakup i zapisać dostęp do kursu na koncie.</div>
+          </div>
+          <v-btn color="primary" @click="goToLogin">Zaloguj</v-btn>
+        </div>
+      </v-alert>
+
+      <div v-if="items.length" class="buy-layout">
+        <v-card elevation="1" class="buy-card">
+          <v-card-title class="buy-card__title">
+            <span>Koszyk</span>
+            <v-chip size="small" color="primary" variant="tonal">{{ items.length }}</v-chip>
+          </v-card-title>
+          <v-divider />
+
+          <v-card-text class="pa-0">
+            <div class="buy-items">
+              <div v-for="item in items" :key="item.id" class="buy-item">
+                <div class="buy-item__main">
+                  <div class="buy-item__title">{{ item.title }}</div>
+                  <div class="buy-item__meta">{{ item.category?.title ?? 'Bez kategorii' }}</div>
+                </div>
+                <div class="buy-item__side">
+                  <div class="buy-item__price">{{ formatMoney(item.priceCents, item.currency) }}</div>
+                  <v-btn
+                    v-if="!isFastBuy"
+                    size="small"
+                    variant="text"
+                    color="error"
+                    @click="remove(item.id)"
+                  >
+                    Usuń
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+
+          <v-divider />
+
+          <v-card-text class="buy-card__form">
+            <v-textarea
+              v-model="customerNote"
+              label="Dodatkowe uwagi"
+              hint="Opcjonalnie, maksymalnie 2000 znaków."
+              counter="2000"
+              maxlength="2000"
+              rows="3"
+              auto-grow
+              variant="outlined"
+              :disabled="checkoutLoading"
+            />
+
+            <v-checkbox v-model="acceptedTerms" :disabled="checkoutLoading" density="compact" class="mt-4">
+              <template #label>
+                <span>
+                  Przeczytałem(-am) i akceptuję
+                  <NuxtLink to="/warunki-zakupu" class="terms-link">warunki zakupu</NuxtLink>.
+                </span>
+              </template>
+            </v-checkbox>
+          </v-card-text>
+        </v-card>
+
+        <v-card elevation="1" class="buy-summary">
+          <v-card-title class="buy-summary__title">Podsumowanie</v-card-title>
+          <v-divider />
+          <v-card-text class="buy-summary__body">
+            <div class="buy-summary__row">
+              <span>Kursy</span>
+              <span>{{ items.length }}</span>
+            </div>
+            <div class="buy-summary__row">
+              <span>Razem</span>
+              <strong>{{ formatMoney(totalCents, currency) }}</strong>
+            </div>
+          </v-card-text>
+          <v-divider />
+          <v-card-actions class="buy-summary__actions">
+            <v-btn
+              v-if="!isFastBuy"
+              variant="text"
+              color="error"
+              :disabled="checkoutLoading"
+              @click="clear"
+            >
+              Wyczyść koszyk
+            </v-btn>
+            <v-btn
+              color="primary"
+              variant="flat"
+              block
+              size="large"
+              :loading="checkoutLoading"
+              :disabled="!items.length || !acceptedTerms"
+              @click="checkout"
+            >
+              Kup teraz
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
+
+      <v-alert v-else variant="tonal" type="info">
+        {{ isFastBuy ? 'Nie znaleziono kursu do szybkiego zakupu.' : 'Koszyk jest pusty.' }}
+      </v-alert>
+    </div>
   </section>
 </template>
 
@@ -114,6 +169,7 @@ const totalCents = computed(() => items.value.reduce((acc, course) => acc + (cou
 const checkoutLoading = ref(false)
 const checkoutError = ref('')
 const acceptedTerms = ref(false)
+const customerNote = ref('')
 
 const formatMoney = (priceCents: number, currencyCode: string) => {
   const amount = (priceCents ?? 0) / 100
@@ -126,7 +182,7 @@ const formatMoney = (priceCents: number, currencyCode: string) => {
 
 const goToLogin = async () => {
   const redirect = route.fullPath
-  await navigateTo({ path: '/', query: { login: '1', redirect } })
+  await navigateTo({ path: '/', query: { login: '1', mode: 'login', redirect } })
 }
 
 const remove = async (courseId: number) => {
@@ -154,7 +210,14 @@ const checkout = async () => {
       ? { courseIds: checkoutCourseIds.value }
       : { mode: 'cart' as const }
 
-    await $fetch('/api/checkout', { method: 'POST', body: { ...body, acceptedTerms: acceptedTerms.value } })
+    await $fetch('/api/checkout', {
+      method: 'POST',
+      body: {
+        ...body,
+        acceptedTerms: acceptedTerms.value,
+        customerNote: customerNote.value,
+      },
+    })
 
     if (!isFastBuy.value) {
       await cart.clearCart()
@@ -167,10 +230,3 @@ const checkout = async () => {
   }
 }
 </script>
-
-<style scoped>
-.terms-link {
-  color: rgb(var(--v-theme-primary));
-  text-decoration: underline;
-}
-</style>

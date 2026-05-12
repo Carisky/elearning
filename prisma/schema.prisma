@@ -284,6 +284,7 @@ model Order {
 
   provider        String?
   paymentIntentId String?
+  customerNote    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

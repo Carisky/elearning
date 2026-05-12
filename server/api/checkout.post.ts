@@ -6,11 +6,29 @@ import { computeExtendedEnrollmentExpiresAt, computeInitialEnrollmentExpiresAt }
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
-  const body = await readBody<{ mode?: 'cart'; courseIds?: number[]; acceptedTerms?: boolean }>(event)
+  const body = await readBody<{
+    mode?: 'cart'
+    courseIds?: number[]
+    acceptedTerms?: boolean
+    customerNote?: unknown
+  }>(event)
 
   if (body?.acceptedTerms !== true) {
     throw createError({ statusCode: 400, statusMessage: 'Zaakceptuj warunki zakupu, aby kontynuować.' })
   }
+
+  const customerNote = (() => {
+    if (body?.customerNote === undefined || body.customerNote === null) return null
+    if (typeof body.customerNote !== 'string') {
+      throw createError({ statusCode: 400, statusMessage: 'Nieprawidlowe uwagi do zamowienia' })
+    }
+    const note = body.customerNote.trim()
+    if (!note) return null
+    if (note.length > 2000) {
+      throw createError({ statusCode: 400, statusMessage: 'Uwagi do zamowienia sa za dlugie' })
+    }
+    return note
+  })()
 
   const explicitIds = Array.isArray(body?.courseIds)
     ? body.courseIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
@@ -70,6 +88,7 @@ export default defineEventHandler(async (event) => {
       status: 'PAID',
       totalCents,
       currency,
+      customerNote,
       items: {
         create: courses.map((course) => ({
           courseId: course.id,

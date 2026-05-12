@@ -253,13 +253,80 @@ describe('Minimal API flows', () => {
 
     const checkout = await apiJson<{ ok: true; orderId: number }>(userJar, '/api/checkout', {
       method: 'POST',
-      body: { mode: 'cart', acceptedTerms: true },
+      body: { mode: 'cart', acceptedTerms: true, customerNote: 'Proszę o fakturę dla firmy TSL.' },
     })
     expect(checkout.ok).toBe(true)
     expect(checkout.orderId).toBeTypeOf('number')
 
+    const order = await prisma.order.findUnique({
+      where: { id: checkout.orderId },
+      select: { customerNote: true },
+    })
+    expect(order?.customerNote).toBe('Proszę o fakturę dla firmy TSL.')
+
     const myCourses = await apiJson<Array<{ course: { id: number; title: string } }>>(userJar, '/api/my-courses')
     expect(myCourses.some((e) => e.course.id === course.id)).toBe(true)
+  })
+
+  it('admin: stats endpoint returns dashboard counters', async () => {
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_stats')
+    await apiJson(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const stats = await apiJson<{
+      users: number
+      courses: number
+      orders: number
+      enrollments: number
+      revenueCents: number
+      pendingReviews: number
+      activeInvites: number
+    }>(adminJar, '/api/admin/stats')
+
+    expect(stats.users).toBeGreaterThanOrEqual(1)
+    expect(stats.courses).toBeGreaterThanOrEqual(0)
+    expect(stats.orders).toBeGreaterThanOrEqual(0)
+    expect(stats.enrollments).toBeGreaterThanOrEqual(0)
+    expect(stats.revenueCents).toBeGreaterThanOrEqual(0)
+    expect(stats.pendingReviews).toBeGreaterThanOrEqual(0)
+    expect(stats.activeInvites).toBeGreaterThanOrEqual(0)
+  })
+
+  it('admin: users endpoint returns admin-visible fields without passwords', async () => {
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_users')
+    await apiJson(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const regularJar: CookieJar = {}
+    const regularEmail = randomEmail('listed_user')
+    await apiJson(regularJar, '/api/register', {
+      method: 'POST',
+      body: { email: regularEmail, password: 'pass12345', name: 'Listed User' },
+    })
+
+    const users = await apiJson<Array<{
+      id: number
+      email: string
+      name: string | null
+      role: string
+      createdAt: string
+      ordersCount: number
+      enrollmentsCount: number
+      password?: string
+    }>>(adminJar, '/api/users')
+
+    const row = users.find((user) => user.email === regularEmail)
+    expect(row).toBeTruthy()
+    expect(row?.createdAt).toBeTypeOf('string')
+    expect(row?.ordersCount).toBe(0)
+    expect(row?.enrollmentsCount).toBe(0)
+    expect(row).not.toHaveProperty('password')
   })
 
   it('access: timed course expires and user can renew', async () => {
