@@ -3,14 +3,10 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { requireAdmin } from '../../utils/auth'
+import { ensureStorageRoot } from '../../utils/storage'
+import { safeImageExtension, SITE_IMAGE_STORAGE_DIR } from '../../utils/siteImages'
 
 const MAX_BYTES = 5 * 1024 * 1024
-
-const safeExt = (filename: string | undefined) => {
-  const ext = filename ? path.extname(filename).toLowerCase() : ''
-  if (ext && /^[a-z0-9.]+$/.test(ext)) return ext
-  return ''
-}
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -35,13 +31,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: `Image is too large (max ${MAX_BYTES} bytes)` })
   }
 
-  const ext = safeExt(file.filename) || '.png'
+  const ext = safeImageExtension(file.filename) || '.png'
   const filename = `site-${crypto.randomUUID()}${ext}`
-  const relativeDir = path.join('uploads', 'site')
-  const absoluteDir = path.join(process.cwd(), 'public', relativeDir)
+  const storageRoot = await ensureStorageRoot()
+  const absoluteDir = path.join(storageRoot, SITE_IMAGE_STORAGE_DIR)
   await mkdir(absoluteDir, { recursive: true })
 
   await writeFile(path.join(absoluteDir, filename), file.data)
 
-  return { url: `/${relativeDir.replaceAll(path.sep, '/')}/${filename}` }
+  return { url: `/uploads/site/${filename}` }
 })
