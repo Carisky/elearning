@@ -5,13 +5,12 @@ import { reactive, ref, watch } from 'vue'
 import AdminShell from '~/components/admin-shell.vue'
 
 type Notification = { type: 'success' | 'error'; message: string }
-
 type ContactCard = { icon: string; title: string; lines: string[] }
 type ContactFaqItem = { q: string; a: string }
 
 type ContactUsPageContent = {
   seo: { title: string; description: string }
-  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string; imageAlt?: string }
+  hero: { eyebrow: string; title: string; subtitle: string; imageUrl?: string; imageAlt?: string }
   cards: ContactCard[]
   form: { title: string; subtitle?: string; recipientEmail: string; subjectPrefix?: string }
   faq: { title: string; items: ContactFaqItem[] }
@@ -21,34 +20,34 @@ type SitePageResponse = { slug: string; content: ContactUsPageContent | null }
 
 const createDefault = (): ContactUsPageContent => ({
   seo: {
-    title: 'Contact — E‑Learning',
+    title: 'Contact - E-Learning',
     description: 'Get in touch: support, partnerships, and general questions.',
   },
   hero: {
     eyebrow: 'Contact',
-    title: 'Let’s talk',
+    title: "Let's talk",
     subtitle:
-      'Send a message, ask a question, or propose a partnership. We usually respond within 1–2 business days.',
+      'Send a message, ask a question, or propose a partnership. We usually respond within 1-2 business days.',
     imageUrl: '/placeholders/contact-hero.svg',
     imageAlt: 'Abstract contact illustration',
   },
   cards: [
     { icon: 'mdi-email-outline', title: 'Email', lines: ['hello@example.com', 'support@example.com'] },
-    { icon: 'mdi-phone-outline', title: 'Phone', lines: ['+48 000 000 000', 'Mon–Fri, 10:00–18:00'] },
-    { icon: 'mdi-map-marker-outline', title: 'Office', lines: ['Warsaw, PL', 'Business Center — Floor 4'] },
+    { icon: 'mdi-phone-outline', title: 'Phone', lines: ['+48 000 000 000', 'Mon-Fri, 10:00-18:00'] },
+    { icon: 'mdi-map-marker-outline', title: 'Office', lines: ['Warsaw, PL', 'Business Center - Floor 4'] },
   ],
   form: {
     title: 'Send us a message',
-    subtitle: 'We’ll get back to you as soon as we can.',
+    subtitle: "We'll get back to you as soon as we can.",
     recipientEmail: 'hello@example.com',
-    subjectPrefix: '[E‑Learning] ',
+    subjectPrefix: '[E-Learning] ',
   },
   faq: {
     title: 'Quick answers',
     items: [
-      { q: 'Is this page editable?', a: 'Yes — update it in Admin → Kontakt.' },
-      { q: 'Do you offer demos?', a: 'Yes — send a message and we will schedule a call.' },
-      { q: 'Support hours?', a: 'Mon–Fri, 10:00–18:00 (CET).' },
+      { q: 'Is this page editable?', a: 'Yes - update it in Admin -> Kontakt.' },
+      { q: 'Do you offer demos?', a: 'Yes - send a message and we will schedule a call.' },
+      { q: 'Support hours?', a: 'Mon-Fri, 10:00-18:00 (CET).' },
     ],
   },
 })
@@ -72,10 +71,10 @@ const { data: pageData, pending, refresh } = useFetch<SitePageResponse>('/api/si
 watch(
   pageData,
   (value) => {
-    const content = value?.content ?? null
-    const next = content ? content : createDefault()
+    const next = value?.content ?? createDefault()
     Object.assign(form, next)
     if (!form.cards) form.cards = []
+    if (!form.form) form.form = createDefault().form
     if (!form.faq) form.faq = { title: 'FAQ', items: [] }
     if (!form.faq.items) form.faq.items = []
   },
@@ -98,7 +97,7 @@ const save = async () => {
     await refresh()
     pushNotification({ type: 'success', message: 'Zapisano.' })
   } catch (e: any) {
-    pushNotification({ type: 'error', message: e?.data?.message ?? e?.message ?? 'Nie udało się zapisać' })
+    pushNotification({ type: 'error', message: e?.data?.message ?? e?.message ?? 'Nie udalo sie zapisac.' })
   } finally {
     saving.value = false
   }
@@ -112,10 +111,10 @@ const save = async () => {
         <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
           <div>
             <h1 class="text-h5 font-weight-bold mb-1">Kontakt</h1>
-            <div class="text-body-2 text-medium-emphasis">Edycja treści strony /contact-us</div>
+            <div class="text-body-2 text-medium-emphasis">Edycja tresci strony /contact-us</div>
           </div>
           <div class="d-flex ga-3">
-            <v-btn variant="tonal" :loading="pending" prepend-icon="mdi-refresh" @click="refresh">Odśwież</v-btn>
+            <v-btn variant="tonal" :loading="pending" prepend-icon="mdi-refresh" @click="refresh">Odswiez</v-btn>
             <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save" @click="save">Zapisz</v-btn>
           </div>
         </div>
@@ -129,7 +128,7 @@ const save = async () => {
           {{ notification.message }}
         </v-alert>
 
-        <v-row class="ga-6">
+        <v-row>
           <v-col cols="12" lg="8">
             <v-card class="mb-6">
               <v-card-title>SEO</v-card-title>
@@ -144,17 +143,9 @@ const save = async () => {
               <v-card-title>Hero</v-card-title>
               <v-divider />
               <v-card-text>
-                <v-row class="ga-4">
-                  <v-col cols="12" md="6">
-                    <v-text-field v-model="form.hero.eyebrow" label="Eyebrow" class="mb-3" />
-                    <v-text-field v-model="form.hero.title" label="Title" class="mb-3" />
-                    <v-textarea v-model="form.hero.subtitle" label="Subtitle" rows="3" auto-grow />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field v-model="form.hero.imageUrl" label="Image URL" class="mb-3" />
-                    <v-text-field v-model="form.hero.imageAlt" label="Image alt" />
-                  </v-col>
-                </v-row>
+                <v-text-field v-model="form.hero.eyebrow" label="Eyebrow" class="mb-3" />
+                <v-text-field v-model="form.hero.title" label="Title" class="mb-3" />
+                <v-textarea v-model="form.hero.subtitle" label="Subtitle" rows="3" auto-grow />
               </v-card-text>
             </v-card>
 
@@ -173,7 +164,7 @@ const save = async () => {
                     </v-btn>
                   </v-card-title>
                   <v-card-text>
-                    <v-row class="ga-4">
+                    <v-row>
                       <v-col cols="12" md="4">
                         <v-text-field v-model="card.icon" label="Icon (mdi-*)" />
                       </v-col>
@@ -222,7 +213,7 @@ const save = async () => {
               <v-card-text>
                 <v-card v-for="(item, idx) in form.faq.items" :key="`faq-${idx}`" class="mb-3" variant="tonal">
                   <v-card-text>
-                    <v-row class="ga-4">
+                    <v-row>
                       <v-col cols="12" md="5">
                         <v-text-field v-model="item.q" label="Question" />
                       </v-col>
@@ -240,19 +231,8 @@ const save = async () => {
               </v-card-text>
             </v-card>
           </v-col>
-
-          <v-col cols="12" lg="4">
-            <v-card class="mb-4">
-              <v-card-title>Podgląd obrazka</v-card-title>
-              <v-divider />
-              <v-card-text>
-                <v-img :src="form.hero.imageUrl" aspect-ratio="1.2" cover rounded />
-              </v-card-text>
-            </v-card>
-          </v-col>
         </v-row>
       </v-container>
     </section>
   </AdminShell>
 </template>
-

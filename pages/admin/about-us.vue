@@ -25,6 +25,7 @@ type AboutUsPageContent = {
   stats: Array<{ value: string; label: string }>
   sections: AboutSection[]
   values: AboutValue[]
+  valuesSection: { title: string; badge: string }
   team: { title: string; subtitle?: string; members: TeamMember[] }
   faq: { title: string; items: AboutFaqItem[] }
   cta: { title: string; subtitle: string; primaryCta: LinkCta; secondaryCta?: LinkCta }
@@ -93,6 +94,10 @@ const createDefault = (): AboutUsPageContent => ({
       description: 'Short lessons, quick feedback, and a clean interface keep learners engaged.',
     },
   ],
+  valuesSection: {
+    title: 'Why people choose us',
+    badge: 'Made for creators',
+  },
   team: {
     title: 'Small team, big focus',
     subtitle: 'We are builders who care about learning outcomes.',
@@ -128,6 +133,8 @@ const pushNotification = (payload: Notification) => {
 
 const form = reactive<AboutUsPageContent>(createDefault())
 const saving = ref(false)
+const uploadingHeroImage = ref(false)
+const heroImageFile = ref<File | File[] | null>(null)
 
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: pageData, pending, refresh } = useFetch<SitePageResponse>('/api/site-pages/about-us' as any, {
@@ -144,9 +151,34 @@ watch(
     if (!form.cta.secondaryCta) {
       form.cta.secondaryCta = { label: '', href: '' }
     }
+    if (!form.valuesSection) {
+      form.valuesSection = createDefault().valuesSection
+    }
   },
   { immediate: true },
 )
+
+const firstFile = (value: File | File[] | null) => Array.isArray(value) ? value[0] ?? null : value
+
+const uploadHeroImage = async (fileValue: File | File[] | null) => {
+  const file = firstFile(fileValue)
+  if (!file) return
+
+  uploadingHeroImage.value = true
+  notification.value = null
+  try {
+    const body = new FormData()
+    body.append('file', file)
+    const result = await $fetch<{ url: string }>('/api/uploads/site-image', { method: 'POST', body })
+    form.hero.imageUrl = result.url
+    heroImageFile.value = null
+    pushNotification({ type: 'success', message: 'Obrazek zostaЕ‚ przesЕ‚any.' })
+  } catch (e: any) {
+    pushNotification({ type: 'error', message: e?.data?.message ?? e?.message ?? 'Nie udaЕ‚o siД™ przesЕ‚aД‡ obrazka.' })
+  } finally {
+    uploadingHeroImage.value = false
+  }
+}
 
 const addStat = () => form.stats.push({ value: '', label: '' })
 const removeStat = (index: number) => form.stats.splice(index, 1)
@@ -225,7 +257,16 @@ const save = async () => {
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-text-field v-model="form.hero.imageUrl" label="Image URL" class="mb-3" />
-                    <v-text-field v-model="form.hero.imageAlt" label="Image alt" />
+                    <v-text-field v-model="form.hero.imageAlt" label="Image alt" class="mb-3" />
+                    <v-file-input
+                      v-model="heroImageFile"
+                      accept="image/*"
+                      label="Wgraj obrazek hero"
+                      prepend-icon="mdi-image-plus"
+                      variant="outlined"
+                      :loading="uploadingHeroImage"
+                      @update:model-value="uploadHeroImage"
+                    />
                   </v-col>
                 </v-row>
               </v-card-text>
@@ -295,6 +336,14 @@ const save = async () => {
               </v-card-title>
               <v-divider />
               <v-card-text>
+                <v-row class="mb-4">
+                  <v-col cols="12" md="7">
+                    <v-text-field v-model="form.valuesSection.title" label="Section title" />
+                  </v-col>
+                  <v-col cols="12" md="5">
+                    <v-text-field v-model="form.valuesSection.badge" label="Badge text" />
+                  </v-col>
+                </v-row>
                 <v-row v-for="(item, idx) in form.values" :key="`value-${idx}`" class="mb-2">
                   <v-col cols="12" md="3">
                     <v-text-field v-model="item.icon" label="Icon (mdi-*)" />

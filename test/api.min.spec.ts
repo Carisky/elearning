@@ -319,6 +319,16 @@ describe('Minimal API flows', () => {
     expect(stats.activeInvites).toBeGreaterThanOrEqual(0)
   })
 
+  it('site pages: about us exposes editable values section copy', async () => {
+    const page = await apiJson<{ slug: string; content: any }>({}, '/api/site-pages/about-us')
+
+    expect(page.slug).toBe('about-us')
+    expect(page.content.valuesSection.title).toBeTypeOf('string')
+    expect(page.content.valuesSection.title.length).toBeGreaterThan(0)
+    expect(page.content.valuesSection.badge).toBeTypeOf('string')
+    expect(page.content.valuesSection.badge.length).toBeGreaterThan(0)
+  })
+
   it('admin: uploaded site images are served from storage-backed public URLs', async () => {
     const adminJar: CookieJar = {}
     const adminEmail = randomEmail('admin_site_image')

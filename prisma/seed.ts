@@ -168,6 +168,10 @@ const DEFAULT_ABOUT_US_PAGE_CONTENT = {
       description: 'Short lessons, quick feedback, and a clean interface keep learners engaged.',
     },
   ],
+  valuesSection: {
+    title: 'Why people choose us',
+    badge: 'Made for creators',
+  },
   team: {
     title: 'Small team, big focus',
     subtitle: 'We are builders who care about learning outcomes.',

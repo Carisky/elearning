@@ -21,6 +21,7 @@ type AboutUsPageContent = {
   stats: Array<{ value: string; label: string }>
   sections: AboutSection[]
   values: AboutValue[]
+  valuesSection: { title: string; badge: string }
   team: { title: string; subtitle?: string; members: TeamMember[] }
   faq: { title: string; items: AboutFaqItem[] }
   cta: { title: string; subtitle: string; primaryCta: LinkCta; secondaryCta?: LinkCta }
@@ -89,6 +90,10 @@ const createFallback = (): AboutUsPageContent => ({
       description: 'Short lessons, quick feedback, and a clean interface keep learners engaged.',
     },
   ],
+  valuesSection: {
+    title: 'Why people choose us',
+    badge: 'Made for creators',
+  },
   team: {
     title: 'Small team, big focus',
     subtitle: 'We are builders who care about learning outcomes.',
@@ -114,12 +119,40 @@ const createFallback = (): AboutUsPageContent => ({
   },
 })
 
+const normalizeContent = (raw: AboutUsPageContent | null | undefined): AboutUsPageContent => {
+  const fallback = createFallback()
+  if (!raw || typeof raw !== 'object') return fallback
+
+  const partial = raw as Partial<AboutUsPageContent>
+  return {
+    ...fallback,
+    ...partial,
+    seo: { ...fallback.seo, ...(partial.seo ?? {}) },
+    hero: { ...fallback.hero, ...(partial.hero ?? {}) },
+    stats: Array.isArray(partial.stats) ? partial.stats : fallback.stats,
+    sections: Array.isArray(partial.sections) ? partial.sections : fallback.sections,
+    values: Array.isArray(partial.values) ? partial.values : fallback.values,
+    valuesSection: { ...fallback.valuesSection, ...(partial.valuesSection ?? {}) },
+    team: {
+      ...fallback.team,
+      ...(partial.team ?? {}),
+      members: Array.isArray(partial.team?.members) ? partial.team.members : fallback.team.members,
+    },
+    faq: {
+      ...fallback.faq,
+      ...(partial.faq ?? {}),
+      items: Array.isArray(partial.faq?.items) ? partial.faq.items : fallback.faq.items,
+    },
+    cta: { ...fallback.cta, ...(partial.cta ?? {}) },
+  }
+}
+
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: page } = await useFetch<SitePageResponse>('/api/site-pages/about-us' as any, {
   default: () => ({ slug: 'about-us', content: null }),
 })
 
-const content = computed(() => page.value?.content ?? createFallback())
+const content = computed(() => normalizeContent(page.value?.content))
 
 useSeoMeta({
   title: computed(() => content.value.seo.title),
@@ -188,8 +221,8 @@ useSeoMeta({
     <section class="about-values py-10 py-md-14">
       <v-container>
         <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-6">
-          <h2 class="text-h5">Why people choose us</h2>
-          <v-chip variant="tonal" color="primary" prepend-icon="mdi-sparkles">Made for creators</v-chip>
+          <h2 class="text-h5">{{ content.valuesSection.title }}</h2>
+          <v-chip variant="tonal" color="primary" prepend-icon="mdi-sparkles">{{ content.valuesSection.badge }}</v-chip>
         </div>
 
         <v-row>

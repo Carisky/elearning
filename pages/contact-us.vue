@@ -6,7 +6,7 @@ type ContactFaqItem = { q: string; a: string }
 
 type ContactUsPageContent = {
   seo: { title: string; description: string }
-  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string; imageAlt?: string }
+  hero: { eyebrow: string; title: string; subtitle: string; imageUrl?: string; imageAlt?: string }
   cards: ContactCard[]
   form: { title: string; subtitle?: string; recipientEmail: string; subjectPrefix?: string }
   faq: { title: string; items: ContactFaqItem[] }
@@ -16,44 +16,64 @@ type SitePageResponse = { slug: string; content: ContactUsPageContent | null }
 
 const createFallback = (): ContactUsPageContent => ({
   seo: {
-    title: 'Contact — E‑Learning',
+    title: 'Contact - E-Learning',
     description: 'Get in touch: support, partnerships, and general questions.',
   },
   hero: {
     eyebrow: 'Contact',
-    title: 'Let’s talk',
+    title: "Let's talk",
     subtitle:
-      'Send a message, ask a question, or propose a partnership. We usually respond within 1–2 business days.',
+      'Send a message, ask a question, or propose a partnership. We usually respond within 1-2 business days.',
     imageUrl: '/placeholders/contact-hero.svg',
     imageAlt: 'Abstract contact illustration',
   },
   cards: [
     { icon: 'mdi-email-outline', title: 'Email', lines: ['hello@example.com', 'support@example.com'] },
-    { icon: 'mdi-phone-outline', title: 'Phone', lines: ['+48 000 000 000', 'Mon–Fri, 10:00–18:00'] },
-    { icon: 'mdi-map-marker-outline', title: 'Office', lines: ['Warsaw, PL', 'Business Center — Floor 4'] },
+    { icon: 'mdi-phone-outline', title: 'Phone', lines: ['+48 000 000 000', 'Mon-Fri, 10:00-18:00'] },
+    { icon: 'mdi-map-marker-outline', title: 'Office', lines: ['Warsaw, PL', 'Business Center - Floor 4'] },
   ],
   form: {
     title: 'Send us a message',
-    subtitle: 'We’ll get back to you as soon as we can.',
+    subtitle: "We'll get back to you as soon as we can.",
     recipientEmail: 'hello@example.com',
-    subjectPrefix: '[E‑Learning] ',
+    subjectPrefix: '[E-Learning] ',
   },
   faq: {
     title: 'Quick answers',
     items: [
-      { q: 'Is this page editable?', a: 'Yes — update it in Admin → Kontakt.' },
-      { q: 'Do you offer demos?', a: 'Yes — send a message and we will schedule a call.' },
-      { q: 'Support hours?', a: 'Mon–Fri, 10:00–18:00 (CET).' },
+      { q: 'Is this page editable?', a: 'Yes - update it in Admin -> Kontakt.' },
+      { q: 'Do you offer demos?', a: 'Yes - send a message and we will schedule a call.' },
+      { q: 'Support hours?', a: 'Mon-Fri, 10:00-18:00 (CET).' },
     ],
   },
 })
+
+const normalizeContent = (raw: ContactUsPageContent | null | undefined): ContactUsPageContent => {
+  const fallback = createFallback()
+  if (!raw || typeof raw !== 'object') return fallback
+
+  const partial = raw as Partial<ContactUsPageContent>
+  return {
+    ...fallback,
+    ...partial,
+    seo: { ...fallback.seo, ...(partial.seo ?? {}) },
+    hero: { ...fallback.hero, ...(partial.hero ?? {}) },
+    cards: Array.isArray(partial.cards) ? partial.cards : fallback.cards,
+    form: { ...fallback.form, ...(partial.form ?? {}) },
+    faq: {
+      ...fallback.faq,
+      ...(partial.faq ?? {}),
+      items: Array.isArray(partial.faq?.items) ? partial.faq.items : fallback.faq.items,
+    },
+  }
+}
 
 // Cast to `any` to avoid Nuxt typed-route inference blowing up TS ("Excessive stack depth...")
 const { data: page } = await useFetch<SitePageResponse>('/api/site-pages/contact-us' as any, {
   default: () => ({ slug: 'contact-us', content: null }),
 })
 
-const content = computed(() => page.value?.content ?? createFallback())
+const content = computed(() => normalizeContent(page.value?.content))
 
 useSeoMeta({
   title: computed(() => content.value.seo.title),
@@ -88,7 +108,7 @@ const copyEmail = async () => {
     copied.value = true
     setTimeout(() => (copied.value = false), 1500)
   } catch {
-    // ignore
+    // Clipboard can be unavailable in insecure contexts.
   }
 }
 </script>
@@ -114,13 +134,35 @@ const copyEmail = async () => {
           </v-col>
 
           <v-col cols="12" md="6">
-            <div class="contact-media">
-              <div class="contact-media__frame">
-                <v-img :src="content.hero.imageUrl" :alt="content.hero.imageAlt" aspect-ratio="1.2" cover />
-              </div>
-              <div class="contact-media__glow contact-media__glow--one" />
-              <div class="contact-media__glow contact-media__glow--two" />
-            </div>
+            <v-card class="contact-form__card contact-form__card--hero" rounded="lg" variant="flat">
+              <v-card-title class="text-h6">{{ content.form.title }}</v-card-title>
+              <v-card-subtitle v-if="content.form.subtitle">{{ content.form.subtitle }}</v-card-subtitle>
+              <v-card-text>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="form.name" label="Imie" />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field v-model="form.email" label="Email" type="email" />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field v-model="form.subject" label="Temat" />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea v-model="form.message" label="Wiadomosc" rows="5" auto-grow />
+                  </v-col>
+                </v-row>
+
+                <div class="d-flex flex-wrap ga-3 mt-2">
+                  <v-btn color="primary" :href="mailtoHref" prepend-icon="mdi-send">
+                    Wyslij
+                  </v-btn>
+                  <v-btn variant="tonal" prepend-icon="mdi-email-outline" :href="`mailto:${content.form.recipientEmail}`">
+                    Otworz poczte
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
           </v-col>
         </v-row>
       </v-container>
@@ -130,7 +172,7 @@ const copyEmail = async () => {
       <v-container>
         <v-row>
           <v-col v-for="(card, idx) in content.cards" :key="`card-${idx}`" cols="12" md="4">
-            <v-card class="contact-card" rounded="xl" variant="flat">
+            <v-card class="contact-card" rounded="lg" variant="flat">
               <v-card-text>
                 <div class="contact-card__icon mb-4">
                   <v-icon size="24">{{ card.icon }}</v-icon>
@@ -146,50 +188,11 @@ const copyEmail = async () => {
       </v-container>
     </section>
 
-    <section class="py-10 py-md-14 contact-form">
+    <section class="py-10 py-md-14 contact-faq">
       <v-container>
-        <v-row>
-          <v-col cols="12" md="6">
-            <h2 class="text-h5 font-weight-bold">{{ content.form.title }}</h2>
-            <div v-if="content.form.subtitle" class="text-body-2 text-medium-emphasis mt-2">
-              {{ content.form.subtitle }}
-            </div>
-
-            <v-card class="contact-form__card mt-6" rounded="xl" variant="flat">
-              <v-card-text>
-                <v-row>
-                  <v-col cols="12" md="6">
-                    <v-text-field v-model="form.name" label="Imię" />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field v-model="form.email" label="Email" type="email" />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field v-model="form.subject" label="Temat" />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-textarea v-model="form.message" label="Wiadomość" rows="6" auto-grow />
-                  </v-col>
-                </v-row>
-
-                <div class="d-flex flex-wrap ga-3 mt-2">
-                  <v-btn color="primary" :href="mailtoHref" prepend-icon="mdi-send">
-                    Wyślij (mail)
-                  </v-btn>
-                  <v-btn variant="tonal" prepend-icon="mdi-email-outline" :href="`mailto:${content.form.recipientEmail}`">
-                    Otwórz pocztę
-                  </v-btn>
-                </div>
-
-                <div class="text-caption text-medium-emphasis mt-4">
-                  Formularz otwiera Twojego klienta poczty (mailto). Możesz też podpiąć wysyłkę przez API w przyszłości.
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
-          <v-col cols="12" md="6">
-            <v-card class="contact-faq__card" rounded="xl" variant="flat">
+        <v-row justify="center">
+          <v-col cols="12" md="8">
+            <v-card class="contact-faq__card" rounded="lg" variant="flat">
               <v-card-title class="text-h6">{{ content.faq.title }}</v-card-title>
               <v-divider />
               <v-card-text>
@@ -229,50 +232,10 @@ const copyEmail = async () => {
   line-height: 1.7;
 }
 
-.contact-media {
-  position: relative;
-  max-width: 540px;
-  margin-left: auto;
-}
-
-.contact-media__frame {
-  border-radius: 28px;
-  overflow: hidden;
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow:
-    0 22px 70px rgba(17, 24, 39, 0.16),
-    0 3px 14px rgba(17, 24, 39, 0.08);
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.contact-media__glow {
-  position: absolute;
-  filter: blur(42px);
-  opacity: 0.6;
-  pointer-events: none;
-  border-radius: 999px;
-}
-
-.contact-media__glow--one {
-  width: 230px;
-  height: 230px;
-  background: rgba(var(--v-theme-primary), 0.35);
-  top: -10%;
-  left: -12%;
-}
-
-.contact-media__glow--two {
-  width: 280px;
-  height: 280px;
-  background: rgba(var(--v-theme-info), 0.25);
-  bottom: -12%;
-  right: -10%;
-}
-
 .contact-card {
   border: 1px solid rgba(17, 24, 39, 0.06);
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 22px 80px rgba(17, 24, 39, 0.08);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
   height: 100%;
 }
 
@@ -281,29 +244,41 @@ const copyEmail = async () => {
   height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(var(--v-theme-primary), 0.12);
   color: rgb(var(--v-theme-primary));
 }
 
-.contact-form {
+.contact-faq {
   background: rgba(17, 24, 39, 0.02);
 }
 
 .contact-form__card,
 .contact-faq__card {
   border: 1px solid rgba(17, 24, 39, 0.06);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 22px 80px rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+
+.contact-form__card--hero {
+  max-width: 540px;
+  margin-left: auto;
 }
 
 .contact-faq__card :deep(.v-expansion-panel) {
   border: 1px solid rgba(17, 24, 39, 0.08);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .contact-faq__card :deep(.v-expansion-panel:not(:last-child)) {
   margin-bottom: 10px;
+}
+
+@media (max-width: 959px) {
+  .contact-form__card--hero {
+    max-width: none;
+    margin-left: 0;
+  }
 }
 </style>
