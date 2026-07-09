@@ -116,9 +116,12 @@ const copyEmail = async () => {
 <template>
   <div class="contact">
     <section class="contact-hero">
+      <div class="contact-hero__accent" aria-hidden="true">
+        <v-icon>mdi-message-text-outline</v-icon>
+      </div>
       <v-container class="py-10 py-md-16">
-        <v-row align="center">
-          <v-col cols="12" md="6">
+        <v-row align="center" justify="space-between">
+          <v-col cols="12" md="6" lg="5">
             <v-chip color="primary" variant="tonal" class="mb-4">
               {{ content.hero.eyebrow }}
             </v-chip>
@@ -133,7 +136,7 @@ const copyEmail = async () => {
             </div>
           </v-col>
 
-          <v-col cols="12" md="6">
+          <v-col cols="12" md="6" lg="5">
             <v-card class="contact-form__card contact-form__card--hero" rounded="lg" variant="flat">
               <v-card-title class="text-h6">{{ content.form.title }}</v-card-title>
               <v-card-subtitle v-if="content.form.subtitle">{{ content.form.subtitle }}</v-card-subtitle>
@@ -213,22 +216,52 @@ const copyEmail = async () => {
 
 <style scoped>
 .contact-hero {
+  position: relative;
+  overflow: hidden;
   background:
-    radial-gradient(900px circle at 20% 0%, rgba(var(--v-theme-primary), 0.18), transparent 62%),
-    radial-gradient(900px circle at 100% 20%, rgba(var(--v-theme-info), 0.12), transparent 58%);
+    linear-gradient(90deg, rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.58) 48%, rgba(17, 24, 39, 0.36)),
+    url('/background_about_us.jpeg') center / cover no-repeat;
+}
+
+.contact-hero > .v-container {
+  position: relative;
+  z-index: 1;
+}
+
+.contact-hero__accent {
+  position: absolute;
+  top: 51%;
+  left: 53%;
+  z-index: 0;
+  display: grid;
+  width: clamp(180px, 18vw, 280px);
+  height: clamp(180px, 18vw, 280px);
+  place-items: center;
+  color: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.contact-hero__accent :deep(.v-icon) {
+  font-size: clamp(150px, 16vw, 250px);
+}
+
+.contact-hero :deep(.v-chip) {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgb(255, 255, 255);
 }
 
 .contact-title {
   font-size: clamp(2.2rem, 3.8vw, 3.4rem);
   line-height: 1.07;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   margin: 0;
-  color: rgba(17, 24, 39, 0.94);
+  color: rgb(255, 255, 255);
 }
 
 .contact-subtitle {
   max-width: 42rem;
-  color: rgba(17, 24, 39, 0.72);
+  color: rgba(255, 255, 255, 0.84);
   line-height: 1.7;
 }
 
@@ -263,6 +296,7 @@ const copyEmail = async () => {
 .contact-form__card--hero {
   max-width: 540px;
   margin-left: auto;
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .contact-faq__card :deep(.v-expansion-panel) {
@@ -276,6 +310,10 @@ const copyEmail = async () => {
 }
 
 @media (max-width: 959px) {
+  .contact-hero__accent {
+    display: none;
+  }
+
   .contact-form__card--hero {
     max-width: none;
     margin-left: 0;
