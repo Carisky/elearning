@@ -402,6 +402,170 @@ describe('Minimal API flows', () => {
     expect(row).not.toHaveProperty('password')
   })
 
+  it('admin: user detail returns course progress, material progress and exam results', async () => {
+    const adminJar: CookieJar = {}
+    const adminEmail = randomEmail('admin_user_detail')
+    const admin = await apiJson<{ id: number }>(adminJar, '/api/register', {
+      method: 'POST',
+      body: { email: adminEmail, password: 'pass12345', role: 'ADMIN' },
+    })
+
+    const category = await apiJson<{ id: number }>(adminJar, '/api/categories', {
+      method: 'POST',
+      body: { title: `Cat ${Date.now()}` },
+    })
+
+    const subcategory = await apiJson<{ id: number }>(adminJar, '/api/subcategories', {
+      method: 'POST',
+      body: { categoryId: category.id, title: `Subcat ${Date.now()}` },
+    })
+
+    const serviceForm = await apiJson<{ id: number }>(adminJar, '/api/service-forms', {
+      method: 'POST',
+      body: { title: `Service ${Date.now()}` },
+    })
+
+    const course = await apiJson<{ id: number; title: string; slug: string }>(adminJar, '/api/courses', {
+      method: 'POST',
+      body: {
+        title: `Tracked Course ${Date.now()}`,
+        categoryId: category.id,
+        subcategoryId: subcategory.id,
+        serviceFormId: serviceForm.id,
+        shortDescription: 'Short description',
+        hoursTotal: 4,
+        price: 0,
+        currency: 'PLN',
+        status: 'PUBLISHED',
+      },
+    })
+
+    const userJar: CookieJar = {}
+    const userEmail = randomEmail('tracked_user')
+    const user = await apiJson<{ id: number; email: string }>(userJar, '/api/register', {
+      method: 'POST',
+      body: { email: userEmail, password: 'pass12345', name: 'Tracked User' },
+    })
+
+    await prisma.enrollment.create({
+      data: { userId: user.id, courseId: course.id, source: 'MANUAL' },
+    })
+
+    const chapter = await prisma.courseItem.create({
+      data: {
+        courseId: course.id,
+        type: 'CHAPTER',
+        title: 'Intro chapter',
+        position: 1,
+        chapter: { create: { contentJson: { ops: [{ insert: 'Intro\n' }] } } },
+      },
+      select: { id: true },
+    })
+
+    const exam = await prisma.courseItem.create({
+      data: {
+        courseId: course.id,
+        type: 'EXAM',
+        title: 'Final exam',
+        position: 2,
+        assessment: {
+          create: {
+            minPassScore: 1,
+            questions: {
+              create: {
+                type: 'SINGLE',
+                text: 'Question',
+                points: 2,
+                position: 1,
+                answers: {
+                  create: [
+                    { text: 'Correct', isCorrect: true, position: 1 },
+                    { text: 'Wrong', isCorrect: false, position: 2 },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    })
+
+    await prisma.userCourseItemReadProgress.create({
+      data: { userId: user.id, courseItemId: chapter.id, readPercent: 50 },
+    })
+
+    await prisma.assessmentAttempt.create({
+      data: {
+        userId: user.id,
+        assessmentId: exam.id,
+        finishedAt: new Date(),
+        score: 2,
+        passed: true,
+      },
+    })
+
+    await prisma.userCourseItemProgress.create({
+      data: { userId: user.id, courseItemId: exam.id },
+    })
+
+    const detail = await apiJson<{
+      user: { id: number; email: string; name: string | null; password?: string }
+      summary: {
+        enrolledCourses: number
+        completedCourses: number
+        currentCourses: number
+        passedExams: number
+        failedExams: number
+        materialReadPercent: number
+      }
+      currentCourse: null | { id: number; title: string; progressPercent: number; materialReadPercent: number }
+      courses: Array<{
+        id: number
+        title: string
+        progressPercent: number
+        materialReadPercent: number
+        finished: boolean
+        exams: Array<{
+          itemId: number
+          title: string
+          attemptsCount: number
+          passedAttempts: number
+          failedAttempts: number
+          latestAttempt: null | { score: number; totalPoints: number; percent: number; passed: boolean }
+        }>
+      }>
+    }>(adminJar, `/api/admin/users/${user.id}`)
+
+    expect(detail.user.id).toBe(user.id)
+    expect(detail.user.email).toBe(user.email)
+    expect(detail.user).not.toHaveProperty('password')
+    expect(detail.summary.enrolledCourses).toBeGreaterThanOrEqual(1)
+    expect(detail.summary.completedCourses).toBe(0)
+    expect(detail.summary.currentCourses).toBe(1)
+    expect(detail.summary.passedExams).toBe(1)
+    expect(detail.summary.failedExams).toBe(0)
+    expect(detail.summary.materialReadPercent).toBe(50)
+    expect(detail.currentCourse?.id).toBe(course.id)
+    expect(detail.currentCourse?.progressPercent).toBe(75)
+    expect(detail.currentCourse?.materialReadPercent).toBe(50)
+
+    const courseRow = detail.courses.find((row) => row.id === course.id)
+    expect(courseRow?.progressPercent).toBe(75)
+    expect(courseRow?.materialReadPercent).toBe(50)
+    expect(courseRow?.finished).toBe(false)
+    expect(courseRow?.exams[0]?.title).toBe('Final exam')
+    expect(courseRow?.exams[0]?.attemptsCount).toBe(1)
+    expect(courseRow?.exams[0]?.passedAttempts).toBe(1)
+    expect(courseRow?.exams[0]?.failedAttempts).toBe(0)
+    expect(courseRow?.exams[0]?.latestAttempt?.score).toBe(2)
+    expect(courseRow?.exams[0]?.latestAttempt?.totalPoints).toBe(2)
+    expect(courseRow?.exams[0]?.latestAttempt?.percent).toBe(100)
+    expect(courseRow?.exams[0]?.latestAttempt?.passed).toBe(true)
+
+    expect(admin.id).toBeTypeOf('number')
+  })
+
   it('access: timed course expires and user can renew', async () => {
     // admin creates a published course with access duration and a renewal option
     const adminJar: CookieJar = {}
