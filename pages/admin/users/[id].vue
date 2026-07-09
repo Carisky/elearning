@@ -268,9 +268,14 @@ const examStatusColor = (exam: UserExamStats) => {
                       </div>
                       <div v-else class="admin-user-exams">
                         <div v-for="exam in course.exams" :key="exam.itemId" class="admin-user-exam">
-                          <div class="d-flex align-center ga-2">
-                            <span class="font-weight-medium">{{ exam.title }}</span>
-                            <v-chip size="x-small" :color="examStatusColor(exam)" variant="tonal">
+                          <div class="admin-user-exam__header">
+                            <span class="admin-user-exam__title font-weight-medium">{{ exam.title }}</span>
+                            <v-chip
+                              class="admin-user-exam__status"
+                              size="x-small"
+                              :color="examStatusColor(exam)"
+                              variant="tonal"
+                            >
                               {{ examStatusLabel(exam) }}
                             </v-chip>
                           </div>
@@ -326,6 +331,23 @@ const examStatusColor = (exam: UserExamStats) => {
 
 .admin-user-exam {
   padding: 8px 0;
+}
+
+.admin-user-exam__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-user-exam__title {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.admin-user-exam__status {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {
