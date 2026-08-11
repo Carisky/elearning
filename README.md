@@ -1,75 +1,52 @@
-# Nuxt Minimal Starter
+# Elearning
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+## Первый запуск
 
-## Setup
-
-Make sure to install dependencies:
+Нужны Node.js, npm и Docker Compose. Создайте локальный файл окружения:
 
 ```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+cp .env.example .env
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Обязательно замените `JWT_SECRET` в `.env` на длинную случайную строку. Затем установите зависимости:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+npm ci
 ```
 
-## Production
+## Разработка
 
-Build the application for production:
+Одна команда поднимает PostgreSQL, применяет миграции и запускает Nuxt:
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+npm run full
 ```
 
-Locally preview production build:
+Сайт будет доступен по адресу `http://localhost:3000`. Prisma Studio запускается отдельно:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+npm run prisma:studio
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+`npm run docker:up` запускает только базу данных и потому сам по себе сайт не открывает.
+
+## Production-сервер
+
+После `npm ci` выполните:
+
+```bash
+npm run server:deploy
+```
+
+Команда поднимает БД, генерирует Prisma Client, применяет миграции, собирает Nuxt и перезапускает сайт. По умолчанию Node слушает только `127.0.0.1:3344`; внешний доступ обычно настраивается через Apache или другой reverse proxy.
+
+Последующие команды:
+
+```bash
+npm run server:status
+npm run server:restart
+npm run server:stop
+tail -f .output/server.log
+```
+
+PostgreSQL опубликован как `127.0.0.1:5431:5432`, поэтому порт `5431` недоступен с внешних сетевых интерфейсов. `DATABASE_URL` приложения при этом использует `127.0.0.1:5431`.
