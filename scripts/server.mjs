@@ -2,6 +2,7 @@ import { closeSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:f
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn, spawnSync } from 'node:child_process'
+import { config as loadEnvironment } from 'dotenv'
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const outputDir = resolve(rootDir, '.output')
@@ -14,9 +15,8 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const pause = (milliseconds) => new Promise((resolvePause) => setTimeout(resolvePause, milliseconds))
 
 const requireEnvironment = () => {
-  try {
-    process.loadEnvFile(envFile)
-  } catch {
+  const result = loadEnvironment({ path: envFile, override: true, quiet: true })
+  if (result.error) {
     console.error(`Missing ${envFile}. Copy .env.example to .env and set JWT_SECRET first.`)
     process.exit(1)
   }
